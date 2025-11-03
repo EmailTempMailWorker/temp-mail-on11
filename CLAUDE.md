@@ -6,8 +6,7 @@ This repository is a **Cloudflare Workers-based temporary email service** that p
 
 - **Type**: Cloudflare Worker + Hono Framework
 - **Purpose**: Temporary email service with attachment support
-- **Live API**: https://api.barid.site
-- **Web Client**: https://web.barid.site
+- **Live API**: https://api.on11.ru
 - **Runtime**: Cloudflare Workers (Edge Computing)
 - **Package Manager**: Bun
 
