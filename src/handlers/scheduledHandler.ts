@@ -1,7 +1,7 @@
 import * as db from "@/database/d1";
 import { now } from "@/utils/helpers";
 import { logInfo } from "@/utils/logger";
-import { sendMessage } from "@/utils/telegram";
+// import { sendMessage } from "@/utils/telegram";
 
 /**
  * Cloudflare Scheduled Function
@@ -10,7 +10,7 @@ import { sendMessage } from "@/utils/telegram";
 export async function handleScheduled(
 	_event: ScheduledEvent,
 	env: CloudflareBindings,
-	ctx: ExecutionContext,
+	// ctx: ExecutionContext,
 ) {
 	const cutoffTimestamp = now() - env.HOURS_TO_DELETE_D1 * 60 * 60;
 
@@ -18,7 +18,7 @@ export async function handleScheduled(
 
 	if (success) {
 		logInfo("Email cleanup completed successfully.");
-		ctx.waitUntil(sendMessage("Email cleanup completed successfully.", env));
+		// ctx.waitUntil(sendMessage("Email cleanup completed successfully.", env));
 	} else {
 		throw new Error(`Email cleanup failed: ${error}`);
 	}

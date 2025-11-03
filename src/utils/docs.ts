@@ -21,6 +21,7 @@ A simple and fast temporary email service that allows you to receive emails with
 - Real-time email retrieval
 - No registration required
 - Automatic cleanup
+- **Telegram bot integration** (personal inboxes)
 
 ## Response Format
 - **Success responses** include \`success: true\` and a \`result\` field
@@ -33,21 +34,21 @@ ${`\n${Array.from(DOMAINS_SET)
 	.map((domain) => `- ${domain}`)
 	.join("\n")}`}
 
-**Repository**: [github.com/vwh/temp-mail](https://github.com/vwh/temp-mail)  
-**Issues**: [Report bugs or request features](https://github.com/vwh/temp-mail/issues)
+**Repository**: [github.com/EmailTempMailWorker/temp-mail-on11](https://github.com/EmailTempMailWorker/temp-mail-on11)  
+**Issues**: [Report bugs or request features](https://github.com/EmailTempMailWorker/temp-mail-on11/issues)
 `,
 			contact: {
 				name: "API Support",
-				url: "https://github.com/vwh/temp-mail",
+				url: "https://github.com/EmailTempMailWorker/temp-mail-on11",
 			},
 			license: {
 				name: "MIT",
-				url: "https://github.com/vwh/temp-mail/blob/main/LICENSE",
+				url: "https://github.com/EmailTempMailWorker/temp-mail-on11/blob/main/LICENSE",
 			},
 		},
 		servers: [
 			{
-				url: "https://api.barid.site",
+				url: "https://api.on11.ru",
 				description: "Production server",
 			},
 		],
@@ -64,9 +65,13 @@ ${`\n${Array.from(DOMAINS_SET)
 				name: "Domains",
 				description: "Get information about supported email domains",
 			},
+			{
+				name: "Telegram",
+				description: "Bot integration and personal inboxes",
+			},
 		],
-		"x-repository": "https://github.com/vwh/temp-mail",
-		"x-issues": "https://github.com/vwh/temp-mail/issues",
+		"x-repository": "https://github.com/EmailTempMailWorker/temp-mail-on11",
+		"x-issues": "https://github.com/EmailTempMailWorker/temp-mail-on11/issues",
 	});
 
 	// Swagger UI - Traditional documentation
