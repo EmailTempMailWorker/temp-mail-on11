@@ -98,6 +98,9 @@ export async function handleEmail(
 		const validAttachments = validateAttachments(attachments, emailId);
 		// Пересылаем письмо в Telegram сразу (без ожидания R2)
 		// ctx.waitUntil(forwardEmailToTelegram(message, email, validAttachments, env, ctx));
+		// === ПЕРЕСЫЛКА В TELEGRAM (ДОБАВЬТЕ ЭТО) ===
+		// console.log("[TG] CALLING forwardEmailToTelegram for:", message.from);
+		ctx.waitUntil(forwardEmailToTelegram(message, email, validAttachments, env, ctx));
 
 		const emailData = emailSchema.parse({
 			id: emailId,
@@ -122,7 +125,7 @@ export async function handleEmail(
 		if (validAttachments.length > 0) {
 			// ctx.waitUntil(processAttachments(env, emailId, validAttachments as EmailAttachment[]));
 			// Пересылаем письмо в Telegram сразу (без ожидания R2)
-			ctx.waitUntil(forwardEmailToTelegram(message, email, validAttachments, env, ctx));
+			// ctx.waitUntil(forwardEmailToTelegram(message, email, validAttachments, env, ctx));
 			ctx.waitUntil(processAttachments(env, emailId, validAttachments as EmailAttachment[]));
 		}
 
@@ -234,7 +237,9 @@ async function forwardEmailToTelegram(
 	env: CloudflareBindings,
 	ctx: ExecutionContext,
 ) {
-	if (env.TELEGRAM_LOG_ENABLE !== true || !env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+	// console.log("[DEBUG] Telegram forwarding triggered for:", message.from, "->", message.to);
+	if (!env.TELEGRAM_LOG_ENABLE || !env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+		console.warn("[Telegram239] Logging disabled or missing config");
 		return;
 	}
 
