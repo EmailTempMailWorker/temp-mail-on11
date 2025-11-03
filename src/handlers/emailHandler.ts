@@ -126,7 +126,8 @@ export async function handleEmail(
 			// ctx.waitUntil(processAttachments(env, emailId, validAttachments as EmailAttachment[]));
 			// Пересылаем письмо в Telegram сразу (без ожидания R2)
 			// ctx.waitUntil(forwardEmailToTelegram(message, email, validAttachments, env, ctx));
-			ctx.waitUntil(processAttachments(env, emailId, validAttachments as EmailAttachment[]));
+			// ctx.waitUntil(processAttachments(env, emailId, validAttachments as EmailAttachment[]));
+			console.log("Есть проблемы с R2. Отключено ctx.waitUntil(processAttachments(env, ...))");
 		}
 
 		timer.end(); // Log processing time
