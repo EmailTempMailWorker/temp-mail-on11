@@ -7,6 +7,7 @@ import { emailSchema } from "@/schemas/emails";
 import { now } from "@/utils/helpers";
 import { processEmailContent } from "@/utils/mail";
 import { PerformanceTimer } from "@/utils/performance";
+import { sendMessage } from "@/utils/telegram";
 
 // Type for PostalMime attachments
 interface EmailAttachment {
@@ -95,6 +96,8 @@ export async function handleEmail(
 		// Process attachments
 		const attachments = email.attachments || [];
 		const validAttachments = validateAttachments(attachments, emailId);
+		// Пересылаем письмо в Telegram сразу (без ожидания R2)
+		// ctx.waitUntil(forwardEmailToTelegram(message, email, validAttachments, env, ctx));
 
 		const emailData = emailSchema.parse({
 			id: emailId,
@@ -117,6 +120,9 @@ export async function handleEmail(
 
 		// Process and store attachments
 		if (validAttachments.length > 0) {
+			// ctx.waitUntil(processAttachments(env, emailId, validAttachments as EmailAttachment[]));
+			// Пересылаем письмо в Telegram сразу (без ожидания R2)
+			ctx.waitUntil(forwardEmailToTelegram(message, email, validAttachments, env, ctx));
 			ctx.waitUntil(processAttachments(env, emailId, validAttachments as EmailAttachment[]));
 		}
 
@@ -205,5 +211,90 @@ async function processAttachments(
 		}
 	} catch (error) {
 		console.error("Failed to process attachments:", error);
+	}
+}
+
+/**
+ * Format bytes to human readable string
+ */
+function formatBytes(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+	return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+/**
+ * Forward full email + attachments to Telegram immediately
+ */
+async function forwardEmailToTelegram(
+	message: ForwardableEmailMessage,
+	email: any,
+	validAttachments: EmailAttachment[],
+	env: CloudflareBindings,
+	ctx: ExecutionContext,
+) {
+	if (env.TELEGRAM_LOG_ENABLE !== true || !env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+		return;
+	}
+
+	const subject = email.subject || "_без темы_";
+	const from = message.from;
+	const to = message.to;
+	const date = new Date().toLocaleString("ru-RU");
+
+	// Основное сообщение
+	const text = `
+*Новое письмо*
+
+*От:* \`${from}\`
+*Кому:* \`${to}\`
+*Тема:* ${subject}
+*Дата:* ${date}
+
+*Текст:*
+\`\`\`
+${email.text?.trim() || email.html?.replace(/<[^>]*>/g, "").trim() || "_пустое тело_"}
+\`\`\`
+`.trim();
+
+	ctx.waitUntil(sendMessage(text, env));
+
+	// Пересылка вложений сразу (без R2)
+	for (const att of validAttachments) {
+		if (!att.filename || !att.content) continue;
+
+		const filename = att.filename;
+		const contentType = att.mimeType || "application/octet-stream";
+		const size =
+			att.content instanceof ArrayBuffer
+				? att.content.byteLength
+				: new TextEncoder().encode(att.content).byteLength;
+
+		// Формируем FormData для sendDocument
+		const form = new FormData();
+		form.append("chat_id", env.TELEGRAM_CHAT_ID);
+
+		// Создаём Blob из ArrayBuffer или строки
+		let blob: Blob;
+		if (att.content instanceof ArrayBuffer) {
+			blob = new Blob([att.content], { type: contentType });
+		} else {
+			blob = new Blob([att.content], { type: contentType });
+		}
+
+		form.append("document", blob, filename);
+		form.append(
+			"caption",
+			`*Вложение:* \`${filename}\`\n*Тип:* ${contentType}\n*Размер:* ${formatBytes(size)}`,
+		);
+
+		// Отправляем в фоне
+		ctx.waitUntil(
+			fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendDocument`, {
+				method: "POST",
+				body: form,
+			}).catch((err) => console.error("Telegram sendDocument failed:", err)),
+		);
 	}
 }

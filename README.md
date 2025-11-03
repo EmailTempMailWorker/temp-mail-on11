@@ -2,9 +2,7 @@
 
 Cloudflare Worker that acts as a temporary email inbox.
 
-**API documentation:** [https://api.barid.site](https://api.barid.site)
-
-AI-made web client: [https://web.barid.site](https://web.barid.site)
+**API documentation:** [https://api.on11.ru](https://api.on11.ru)
 
 ## Table of Contents
 
@@ -41,18 +39,8 @@ A big thank you to individuals who have donated domains to support this project.
 
 | Domain | Donated by |
 | --- | --- |
-| `barid.site` | [vwh](https://github.com/vwh) |
-| `vwh.sh` | [vwh](https://github.com/vwh) |
-| `iusearch.lol` | [vwh](https://github.com/vwh) |
-| `lifetalk.us` | [mm6x](https://github.com/mm6x) |
-| `z44d.pro` | [z44d](https://github.com/z44d) |
-| `wael.fun` | [blockton](https://github.com/blockton) |
-| `tawbah.site` | [HprideH](https://github.com/HprideH) |
-| `kuruptd.ink` | [HprideH](https://github.com/HprideH) |
-| `oxno1.space` | [oxno1](https://github.com/oxno1) |
-| `hacktivc.com` | None |
-| `lealaom.xyz` | None |
-| `leala.site` | None |
+| `on11.ru` | [Aleksander](https://github.com/EmailTempMailWorker/temp-mail-on11) |
+
 
 ### How to Donate a Domain
 
@@ -114,7 +102,7 @@ Before you begin, ensure you have following:
     bun run db:indexes
     ```
 
-#### R2 Bucket Setup
+#### R2 Bucket Setup (temp blok)
 
 1.  **Create** R2 Bucket**:
     ```bash
@@ -205,7 +193,7 @@ bun run deploy
 - `bun run db:indexes` - Apply database indexes
 - `bun run db:migrate-attachments` - Add attachment support to existing database
 
-### Storage Setup
+### Storage Setup (temp blok)
 - `bun run r2:create` - Create R2 bucket for attachments
 - `bun run r2:create-preview` - Create R2 preview bucket
 
@@ -252,4 +240,4 @@ bun run deploy
 
 - `GET /health` - Service health status
 
-For complete API documentation with examples, visit: [https://api.barid.site](https://api.barid.site)
+For complete API documentation with examples, visit: [https://api.on11.ru](https://api.on11.ru)
