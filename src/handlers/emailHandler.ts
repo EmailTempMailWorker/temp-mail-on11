@@ -204,7 +204,7 @@ async function processSingleAttachment(
 /**
  * Process and store email attachments
  */
-async function processAttachments(
+async function _processAttachments(
 	env: CloudflareBindings,
 	emailId: string,
 	attachments: EmailAttachment[],

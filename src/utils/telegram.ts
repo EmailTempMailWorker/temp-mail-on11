@@ -48,5 +48,6 @@ export async function sendMessage(text: string, env: CloudflareBindings) {
 		}
 	} catch (error) {
 		console.error("[Telegram] Exception:", error);
+		logError("Failed to send Telegram message", error as Error);
 	}
 }
