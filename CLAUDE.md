@@ -63,6 +63,8 @@ src/
 ├── schemas/                   # Zod schemas for validation
 │   ├── emails/                # Email-related schemas
 │   └── attachments/           # Attachment-related schemas
+├── types/                     # Types interface
+│   ├── env.d.ts/              # CloudflareBindings interface
 └── utils/                     # Utility functions
     ├── docs.ts                # OpenAPI documentation setup
     ├── helpers.ts             # Helper functions

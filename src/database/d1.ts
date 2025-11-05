@@ -1,9 +1,12 @@
 import type { Attachment, AttachmentSummary } from "@/schemas/attachments";
 import type { Email, EmailSummary } from "@/schemas/emails";
+import type { DBAttachment, DBEmail, DBJoinedRow } from "@/types/database";
 
-/**
- * Insert an email into the database
- */
+function toTimestamp(date: number | string): number {
+	return typeof date === "string" ? new Date(date).getTime() : date;
+}
+
+// === INSERT EMAIL ===
 export async function insertEmail(db: D1Database, emailData: Email) {
 	try {
 		const { success, error, meta } = await db
@@ -19,20 +22,18 @@ export async function insertEmail(db: D1Database, emailData: Email) {
 				emailData.received_at,
 				emailData.html_content,
 				emailData.text_content,
-				emailData.has_attachments,
+				emailData.has_attachments ? 1 : 0,
 				emailData.attachment_count,
 			)
 			.run();
 		return { success, error, meta };
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { success: false, error: error, meta: undefined };
+		return { success: false, error, meta: undefined };
 	}
 }
 
-/**
- * Get emails by recipient email address
- */
+// === GET EMAILS BY RECIPIENT ===
 export async function getEmailsByRecipient(
 	db: D1Database,
 	emailAddress: string,
@@ -49,47 +50,55 @@ export async function getEmailsByRecipient(
          LIMIT ? OFFSET ?`,
 			)
 			.bind(emailAddress, limit, offset)
-			.all();
+			.all<DBEmail>();
 
-		// Convert SQLite boolean integers to proper booleans
-		const convertedResults = results.map((row: any) => ({
-			...row,
+		const convertedResults: EmailSummary[] = results.map((row) => ({
+			id: row.id,
+			from_address: row.from_address,
+			to_address: row.to_address,
+			subject: row.subject,
+			received_at: toTimestamp(row.received_at),
 			has_attachments: Boolean(row.has_attachments),
+			attachment_count: row.attachment_count,
 		}));
 
-		return { results: convertedResults as EmailSummary[], error: undefined };
-	} catch (e: unknown) {
+		return { results: convertedResults, error: undefined };
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { results: [], error: error };
+		return { results: [] as EmailSummary[], error };
 	}
 }
 
-/**
- * Get an email by ID
- */
+// === GET EMAIL BY ID ===
 export async function getEmailById(db: D1Database, emailId: string) {
 	try {
-		const emailResult = await db.prepare("SELECT * FROM emails WHERE id = ?").bind(emailId).first();
+		const emailResult = await db
+			.prepare("SELECT * FROM emails WHERE id = ?")
+			.bind(emailId)
+			.first<DBEmail>();
 
-		if (emailResult) {
-			// Convert SQLite boolean integers to proper booleans
-			const convertedResult = {
-				...emailResult,
-				has_attachments: Boolean(emailResult.has_attachments),
-			};
-			return { result: convertedResult as Email, error: undefined };
-		}
+		if (!emailResult) return { result: null, error: undefined };
 
-		return { result: null, error: undefined };
-	} catch (e: unknown) {
+		const converted: Email = {
+			id: emailResult.id,
+			from_address: emailResult.from_address,
+			to_address: emailResult.to_address,
+			subject: emailResult.subject,
+			received_at: toTimestamp(emailResult.received_at),
+			html_content: emailResult.html_content,
+			text_content: emailResult.text_content,
+			has_attachments: Boolean(emailResult.has_attachments),
+			attachment_count: emailResult.attachment_count,
+		};
+
+		return { result: converted, error: undefined };
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { result: null, error: error };
+		return { result: null, error };
 	}
 }
 
-/**
- * Delete emails older than a specific timestamp
- */
+// === DELETE OLD EMAILS ===
 export async function deleteOldEmails(db: D1Database, timestamp: number) {
 	try {
 		const { success, error, meta } = await db
@@ -97,15 +106,13 @@ export async function deleteOldEmails(db: D1Database, timestamp: number) {
 			.bind(timestamp)
 			.run();
 		return { success, error, meta };
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { success: false, error: error, meta: undefined };
+		return { success: false, error, meta: undefined };
 	}
 }
 
-/**
- * Delete emails by recipient email address
- */
+// === DELETE BY RECIPIENT ===
 export async function deleteEmailsByRecipient(db: D1Database, emailAddress: string) {
 	try {
 		const { success, error, meta } = await db
@@ -113,15 +120,13 @@ export async function deleteEmailsByRecipient(db: D1Database, emailAddress: stri
 			.bind(emailAddress)
 			.run();
 		return { success, error, meta };
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { success: false, error: error, meta: undefined };
+		return { success: false, error, meta: undefined };
 	}
 }
 
-/**
- * Delete an email by ID
- */
+// === DELETE BY ID ===
 export async function deleteEmailById(db: D1Database, emailId: string) {
 	try {
 		const { success, error, meta } = await db
@@ -129,15 +134,13 @@ export async function deleteEmailById(db: D1Database, emailId: string) {
 			.bind(emailId)
 			.run();
 		return { success, error, meta };
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { success: false, error: error, meta: undefined };
+		return { success: false, error, meta: undefined };
 	}
 }
 
-/**
- * Count emails by recipient email address
- */
+// === COUNT EMAILS ===
 export async function countEmailsByRecipient(db: D1Database, emailAddress: string) {
 	try {
 		const result = await db
@@ -145,15 +148,13 @@ export async function countEmailsByRecipient(db: D1Database, emailAddress: strin
 			.bind(emailAddress)
 			.first<{ count: number }>();
 		return { count: result?.count || 0, error: undefined };
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { count: 0, error: error };
+		return { count: 0, error };
 	}
 }
 
-/**
- * Insert an attachment into the database
- */
+// === INSERT ATTACHMENT ===
 export async function insertAttachment(db: D1Database, attachmentData: Attachment) {
 	try {
 		const { success, error, meta } = await db
@@ -172,15 +173,13 @@ export async function insertAttachment(db: D1Database, attachmentData: Attachmen
 			)
 			.run();
 		return { success, error, meta };
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { success: false, error: error, meta: undefined };
+		return { success: false, error, meta: undefined };
 	}
 }
 
-/**
- * Get attachments by email ID
- */
+// === GET ATTACHMENTS BY EMAIL ID ===
 export async function getAttachmentsByEmailId(db: D1Database, emailId: string) {
 	try {
 		const { results } = await db
@@ -191,33 +190,38 @@ export async function getAttachmentsByEmailId(db: D1Database, emailId: string) {
          ORDER BY created_at ASC`,
 			)
 			.bind(emailId)
-			.all();
-		return { results: results as AttachmentSummary[], error: undefined };
-	} catch (e: unknown) {
+			.all<DBAttachment>();
+
+		const converted: AttachmentSummary[] = results.map((row) => ({
+			id: row.id,
+			filename: row.filename,
+			content_type: row.content_type,
+			size: row.size,
+			created_at: toTimestamp(row.created_at),
+		}));
+
+		return { results: converted, error: undefined };
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { results: [], error: error };
+		return { results: [] as AttachmentSummary[], error };
 	}
 }
 
-/**
- * Get attachment by ID (with R2 key for download)
- */
+// === GET ATTACHMENT BY ID ===
 export async function getAttachmentById(db: D1Database, attachmentId: string) {
 	try {
 		const result = await db
 			.prepare("SELECT * FROM attachments WHERE id = ?")
 			.bind(attachmentId)
-			.first();
-		return { result: result as Attachment | null, error: undefined };
-	} catch (e: unknown) {
+			.first<DBAttachment>();
+		return { result: result ? (result as Attachment) : null, error: undefined };
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { result: null, error: error };
+		return { result: null, error };
 	}
 }
 
-/**
- * Delete attachment by ID
- */
+// === DELETE ATTACHMENT BY ID ===
 export async function deleteAttachmentById(db: D1Database, attachmentId: string) {
 	try {
 		const { success, error, meta } = await db
@@ -225,15 +229,13 @@ export async function deleteAttachmentById(db: D1Database, attachmentId: string)
 			.bind(attachmentId)
 			.run();
 		return { success, error, meta };
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { success: false, error: error, meta: undefined };
+		return { success: false, error, meta: undefined };
 	}
 }
 
-/**
- * Delete all attachments for an email
- */
+// === DELETE ATTACHMENTS BY EMAIL ID ===
 export async function deleteAttachmentsByEmailId(db: D1Database, emailId: string) {
 	try {
 		const { success, error, meta } = await db
@@ -241,15 +243,13 @@ export async function deleteAttachmentsByEmailId(db: D1Database, emailId: string
 			.bind(emailId)
 			.run();
 		return { success, error, meta };
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { success: false, error: error, meta: undefined };
+		return { success: false, error, meta: undefined };
 	}
 }
 
-/**
- * Update email attachment info
- */
+// === UPDATE ATTACHMENT INFO ===
 export async function updateEmailAttachmentInfo(
 	db: D1Database,
 	emailId: string,
@@ -259,18 +259,16 @@ export async function updateEmailAttachmentInfo(
 	try {
 		const { success, error, meta } = await db
 			.prepare("UPDATE emails SET has_attachments = ?, attachment_count = ? WHERE id = ?")
-			.bind(hasAttachments, attachmentCount, emailId)
+			.bind(hasAttachments ? 1 : 0, attachmentCount, emailId)
 			.run();
 		return { success, error, meta };
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { success: false, error: error, meta: undefined };
+		return { success: false, error, meta: undefined };
 	}
 }
 
-/**
- * Get emails with attachments in a single query
- */
+// === GET EMAILS WITH ATTACHMENTS (JOIN) ===
 export async function getEmailsWithAttachments(
 	db: D1Database,
 	emailAddress: string,
@@ -281,42 +279,54 @@ export async function getEmailsWithAttachments(
 		const { results } = await db
 			.prepare(
 				`SELECT
-					e.id, e.from_address, e.to_address, e.subject, e.received_at,
-					e.has_attachments, e.attachment_count,
-					a.id as att_id, a.filename, a.content_type, a.size, a.created_at as att_created_at
-				FROM emails e
-				LEFT JOIN attachments a ON e.id = a.email_id
-				WHERE e.to_address = ?
-				ORDER BY e.received_at DESC, a.created_at ASC
-				LIMIT ? OFFSET ?`,
+          e.id, e.from_address, e.to_address, e.subject, e.received_at,
+          e.has_attachments, e.attachment_count,
+          a.id as att_id, a.filename, a.content_type, a.size, a.created_at as att_created_at
+        FROM emails e
+        LEFT JOIN attachments a ON e.id = a.email_id
+        WHERE e.to_address = ?
+        ORDER BY e.received_at DESC, a.created_at ASC
+        LIMIT ? OFFSET ?`,
 			)
 			.bind(emailAddress, limit, offset)
-			.all();
+			.all<DBJoinedRow>();
 
-		// Group results by email and combine attachments
-		const emailMap = new Map<string, any>();
+		const emailMap = new Map<
+			string,
+			{
+				email: EmailSummary;
+				attachments: AttachmentSummary[];
+			}
+		>();
 
-		for (const row of results as any[]) {
+		for (const row of results) {
 			const emailId = row.id;
 
-			if (!emailMap.has(emailId)) {
-				emailMap.set(emailId, {
-					id: emailId,
-					from_address: row.from_address,
-					to_address: row.to_address,
-					subject: row.subject,
-					received_at: row.received_at,
-					has_attachments: Boolean(row.has_attachments),
-					attachment_count: row.attachment_count,
+			let entry = emailMap.get(emailId);
+			if (!entry) {
+				entry = {
+					email: {
+						id: row.id,
+						from_address: row.from_address,
+						to_address: row.to_address,
+						subject: row.subject,
+						received_at: row.received_at,
+						has_attachments: Boolean(row.has_attachments),
+						attachment_count: row.attachment_count,
+					},
 					attachments: [],
-				});
+				};
+				emailMap.set(emailId, entry);
 			}
 
-			const email = emailMap.get(emailId);
-
-			// Add attachment if it exists
-			if (row.att_id) {
-				email.attachments.push({
+			if (
+				row.att_id &&
+				row.filename &&
+				row.content_type &&
+				row.size !== undefined &&
+				row.att_created_at !== undefined
+			) {
+				entry.attachments.push({
 					id: row.att_id,
 					filename: row.filename,
 					content_type: row.content_type,
@@ -326,10 +336,9 @@ export async function getEmailsWithAttachments(
 			}
 		}
 
-		// Convert back to array and flatten attachments
-		const emailsWithAttachments = Array.from(emailMap.values());
-		const allAttachments = emailsWithAttachments.flatMap((email) =>
-			email.attachments.map((att: any) => ({
+		const emailsWithAttachments = Array.from(emailMap.values()).map((e) => e.email);
+		const allAttachments = Array.from(emailMap.values()).flatMap(({ email, attachments }) =>
+			attachments.map((att) => ({
 				...att,
 				email_id: email.id,
 				email_subject: email.subject,
@@ -342,8 +351,8 @@ export async function getEmailsWithAttachments(
 			emails: emailsWithAttachments,
 			error: undefined,
 		};
-	} catch (e: unknown) {
+	} catch (e) {
 		const error = e instanceof Error ? e : new Error(String(e));
-		return { results: [], emails: [], error: error };
+		return { results: [], emails: [], error };
 	}
 }

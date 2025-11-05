@@ -1,4 +1,5 @@
 import type { CloudflareBindings } from "@/types/env";
+import type { TelegramUpdate } from "@/types/telegram";
 import { logInfo } from "@/utils/logger";
 
 export async function sendMessage(
@@ -24,7 +25,10 @@ export async function sendMessage(
 	}).catch((err) => console.error("Telegram send error:", err));
 }
 
-export async function handleTelegramUpdate(body: any, env: CloudflareBindings): Promise<Response> {
+export async function handleTelegramUpdate(
+	body: TelegramUpdate,
+	env: CloudflareBindings,
+): Promise<Response> {
 	const message = body.message;
 	if (!message?.text) return new Response("OK", { status: 200 });
 
