@@ -17,18 +17,6 @@ interface EmailAttachment {
 	content?: string | ArrayBuffer;
 }
 
-// interface EmailFromDB {
-// 	id: string;
-// 	from_address: string;
-// 	to_address: string;
-// 	subject: string | null;
-// 	received_at: number;
-// 	html_content: string | null;
-// 	text_content: string | null;
-// 	has_attachments: boolean;
-// 	attachment_count: number;
-// }
-
 // === Валидация вложений ===
 function validateAttachments(attachments: EmailAttachment[], emailId: string): EmailAttachment[] {
 	const validAttachments: EmailAttachment[] = [];
@@ -247,6 +235,7 @@ ${bodyText}
 		}
 
 		form.append("document", blob, filename);
+		form.append("parse_mode", "HTML");
 		form.append(
 			"caption",
 			`<b>Вложение:</b> \`${filename}\`\n<b>Тип:</b> ${contentType}\n<b>Размер:</b> ${formatBytes(size)}`,
