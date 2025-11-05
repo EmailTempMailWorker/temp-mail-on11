@@ -5,6 +5,7 @@ import { setupDocumentation } from "@/utils/docs";
 import { logError } from "@/utils/logger";
 import corsMiddleware from "./middlewares/cors";
 import healthRoutes from "./routes/healthRoutes";
+import { telegramRoutes } from "./routes/telegramRoutes";
 import { ERR } from "./utils/http";
 
 const app = new OpenAPIHono<{ Bindings: CloudflareBindings }>();
@@ -25,6 +26,8 @@ app.route("/", emailRoutes);
 app.route("/", attachmentRoutes);
 // Health Check
 app.route("/", healthRoutes);
+// TelegramRoutes
+app.route("/", telegramRoutes);
 
 // --- OpenAPI Documentation ---
 setupDocumentation(app);
