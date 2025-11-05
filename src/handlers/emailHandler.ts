@@ -252,17 +252,16 @@ async function forwardEmailToTelegram(
 
 	// Основное сообщение
 	const text = `
-*Новое письмо*
+<b>Письмо на ${to}</b>
 
-*От:* \`${from}\`
-*Кому:* \`${to}\`
-*Тема:* ${subject}
-*Дата:* ${date}
+<b>От:</b> ${from}
+<b>Тема:</b> ${subject}
+<b>Дата:</b> ${date}
 
-*Текст:*
-\`\`\`
+<b>Текст:</b>
+
 ${email.text?.trim() || email.html?.replace(/<[^>]*>/g, "").trim() || "_пустое тело_"}
-\`\`\`
+
 `.trim();
 
 	ctx.waitUntil(sendMessage(text, env, env.TELEGRAM_CHAT_ID));
