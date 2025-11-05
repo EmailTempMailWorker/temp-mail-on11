@@ -1,5 +1,6 @@
 import type { Attachment, AttachmentSummary } from "@/schemas/attachments";
 import type { Email, EmailSummary } from "@/schemas/emails";
+import type { DBEmailRow, EmailWithAttachments } from "@/types/email";
 
 /**
  * Insert an email into the database
@@ -52,7 +53,7 @@ export async function getEmailsByRecipient(
 			.all();
 
 		// Convert SQLite boolean integers to proper booleans
-		const convertedResults = results.map((row: any) => ({
+		const convertedResults = results.map((row) => ({
 			...row,
 			has_attachments: Boolean(row.has_attachments),
 		}));
@@ -294,42 +295,52 @@ export async function getEmailsWithAttachments(
 			.all();
 
 		// Group results by email and combine attachments
-		const emailMap = new Map<string, any>();
+		const emailMap = new Map<string, EmailWithAttachments>();
 
-		for (const row of results as any[]) {
-			const emailId = row.id;
+		for (const row of results as unknown[]) {
+			// Проверяем, что это объект
+			if (!row || typeof row !== "object") continue;
+
+			// Кастуем к DBEmailRow (безопасно, потому что мы проверили)
+			const r = row as DBEmailRow;
+
+			const emailId = r.id;
+			if (!emailId) continue;
 
 			if (!emailMap.has(emailId)) {
 				emailMap.set(emailId, {
 					id: emailId,
-					from_address: row.from_address,
-					to_address: row.to_address,
-					subject: row.subject,
-					received_at: row.received_at,
-					has_attachments: Boolean(row.has_attachments),
-					attachment_count: row.attachment_count,
+					inbox: r.inbox ?? "",
+					from_address: r.from_address ?? "",
+					to_address: r.to_address ?? "",
+					subject: r.subject ?? "",
+					body_text: r.body_text,
+					body_html: r.body_html,
+					has_attachments: Boolean(r.has_attachments),
+					received_at: r.received_at ?? "",
 					attachments: [],
 				});
 			}
 
-			const email = emailMap.get(emailId);
-
-			// Add attachment if it exists
-			if (row.att_id) {
-				email.attachments.push({
-					id: row.att_id,
-					filename: row.filename,
-					content_type: row.content_type,
-					size: row.size,
-					created_at: row.att_created_at,
-				});
+			if (r.att_id) {
+				const email = emailMap.get(emailId);
+				if (email) {
+					email.attachments.push({
+						id: r.att_id,
+						filename: r.filename ?? "unknown",
+						content_type: r.content_type ?? "application/octet-stream",
+						size: r.size ?? 0,
+						storage_key: r.storage_key ?? "",
+						created_at: r.att_created_at,
+					});
+				}
 			}
 		}
 
 		// Convert back to array and flatten attachments
 		const emailsWithAttachments = Array.from(emailMap.values());
 		const allAttachments = emailsWithAttachments.flatMap((email) =>
-			email.attachments.map((att: any) => ({
+			email.attachments.map((att) => ({
 				...att,
 				email_id: email.id,
 				email_subject: email.subject,
@@ -338,8 +349,17 @@ export async function getEmailsWithAttachments(
 		);
 
 		return {
-			results: allAttachments as AttachmentSummary[],
-			emails: emailsWithAttachments,
+			results: allAttachments.map((att) => ({
+				...att,
+				created_at: att.created_at ? new Date(att.created_at).getTime() : Date.now(),
+			})) satisfies {
+				id: string;
+				filename: string;
+				content_type: string;
+				size: number;
+				storage_key: string;
+				created_at: number;
+			}[],
 			error: undefined,
 		};
 	} catch (e: unknown) {

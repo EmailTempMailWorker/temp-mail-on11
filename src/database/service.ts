@@ -1,5 +1,6 @@
 import type { Attachment, AttachmentSummary } from "@/schemas/attachments";
 import type { Email, EmailSummary } from "@/schemas/emails";
+import type { DBEmailRow, EmailWithAttachments } from "@/types/email";
 
 export class DatabaseService {
 	constructor(private db: D1Database) {}
@@ -215,39 +216,48 @@ export class DatabaseService {
 			}
 
 			// Group results by email and combine attachments
-			const emailMap = new Map<string, any>();
+			const emailMap = new Map<string, EmailWithAttachments>();
 
-			for (const row of results as any[]) {
-				const emailId = row.id;
+			for (const row of results as unknown[]) {
+				if (!row || typeof row !== "object") continue;
+				const r = row as DBEmailRow;
+
+				const emailId = r.id;
+				if (!emailId) continue;
 
 				if (!emailMap.has(emailId)) {
 					emailMap.set(emailId, {
 						id: emailId,
-						from_address: row.from_address,
-						to_address: row.to_address,
-						subject: row.subject,
-						received_at: row.received_at,
-						has_attachments: row.has_attachments,
-						attachment_count: row.attachment_count,
+						inbox: r.inbox ?? "",
+						from_address: r.from_address ?? "",
+						to_address: r.to_address ?? "",
+						subject: r.subject ?? "",
+						body_text: r.body_text,
+						body_html: r.body_html,
+						has_attachments: Boolean(r.has_attachments),
+						received_at: r.received_at ?? "",
 						attachments: [],
 					});
 				}
 
-				if (row.att_id) {
+				if (r.att_id) {
 					const email = emailMap.get(emailId);
-					email.attachments.push({
-						id: row.att_id,
-						filename: row.filename,
-						content_type: row.content_type,
-						size: row.size,
-						created_at: row.att_created_at,
-					});
+					if (email) {
+						email.attachments.push({
+							id: r.att_id,
+							filename: r.filename ?? "unknown",
+							content_type: r.content_type ?? "application/octet-stream",
+							size: r.size ?? 0,
+							storage_key: r.storage_key ?? "",
+							created_at: r.att_created_at,
+						});
+					}
 				}
 			}
 
 			const emailsWithAttachments = Array.from(emailMap.values());
 			const allAttachments = emailsWithAttachments.flatMap((email) =>
-				email.attachments.map((att: any) => ({
+				email.attachments.map((att) => ({
 					...att,
 					email_id: email.id,
 				})),

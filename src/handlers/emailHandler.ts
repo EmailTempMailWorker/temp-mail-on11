@@ -4,6 +4,7 @@ import { ATTACHMENT_LIMITS } from "@/config/constants";
 import * as db from "@/database/d1";
 import * as r2 from "@/database/r2";
 import { emailSchema } from "@/schemas/emails";
+import type { ParsedEmail } from "@/types/email";
 import { now } from "@/utils/helpers";
 import { processEmailContent } from "@/utils/mail";
 import { PerformanceTimer } from "@/utils/performance";
@@ -97,10 +98,9 @@ export async function handleEmail(
 		const attachments = email.attachments || [];
 		const validAttachments = validateAttachments(attachments, emailId);
 		// Пересылаем письмо в Telegram сразу (без ожидания R2)
-		// ctx.waitUntil(forwardEmailToTelegram(message, email, validAttachments, env, ctx));
-		// === ПЕРЕСЫЛКА В TELEGRAM (ДОБАВЬТЕ ЭТО) ===
-		// console.log("[TG] CALLING forwardEmailToTelegram for:", message.from);
-		ctx.waitUntil(forwardEmailToTelegram(message, email, validAttachments, env, ctx));
+		ctx.waitUntil(
+			forwardEmailToTelegram(message, email as ParsedEmail, validAttachments, env, ctx),
+		);
 
 		const emailData = emailSchema.parse({
 			id: emailId,
@@ -233,7 +233,7 @@ function formatBytes(bytes: number): string {
  */
 async function forwardEmailToTelegram(
 	message: ForwardableEmailMessage,
-	email: any,
+	email: ParsedEmail,
 	validAttachments: EmailAttachment[],
 	env: CloudflareBindings,
 	ctx: ExecutionContext,

@@ -40,7 +40,11 @@ attachmentRoutes.openapi(getEmailAttachmentsRoute, async (c) => {
 
 	// Sort by created_at and apply pagination
 	const sortedAttachments = allAttachments
-		.sort((a, b) => b.created_at - a.created_at)
+		.sort((a, b) => {
+			const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+			const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+			return bTime - aTime;
+		})
 		.slice(offset, offset + limit);
 
 	return c.json(OK(sortedAttachments));

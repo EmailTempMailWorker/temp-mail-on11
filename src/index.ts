@@ -11,10 +11,10 @@ export default {
 	email: handleEmail,
 
 	// Cloudflare Scheduled Functions
-	scheduled: (event: ScheduledEvent, env: CloudflareBindings, ctx: ExecutionContext) => {
+	scheduled: (event: ScheduledEvent, env: CloudflareBindings, _ctx: ExecutionContext) => {
 		switch (event.cron) {
 			case "0 * * * *":
-				return handleScheduled(event, env, ctx);
+				return handleScheduled(event, env);
 		}
 	},
 };

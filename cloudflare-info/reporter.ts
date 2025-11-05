@@ -2,7 +2,7 @@ import {
     getCloudflareApiData,
     WorkerScript,
     D1Database,
-    KVNamespace,
+    //KVNamespace,
     Zone,
     EmailRoutingRule,
 } from './api';
@@ -83,21 +83,21 @@ export async function report() {
         console.error("Could not fetch D1 database information.");
     }
 
-    // --- KV Namespaces ---
-    try {
-        const kvData = await getCloudflareApiData<KVNamespace[]>('/storage/kv/namespaces');
-        if (kvData.success) {
-            console.log("\n--- Cloudflare KV Namespaces ---");
-            if (kvData.result.length === 0) {
-                console.log("No KV namespaces found.");
-            }
-            else {
-                kvData.result.forEach((ns: KVNamespace) => {
-                    console.log(`  - Title: ${ns.title}, ID: ${ns.id}`);
-                });
-            }
-        }
-    } catch (error) {
-        console.error("Could not fetch KV namespace information.");
-    }
+    // // --- KV Namespaces ---
+    // try {
+    //     const kvData = await getCloudflareApiData<KVNamespace[]>('/storage/kv/namespaces');
+    //     if (kvData.success) {
+    //         console.log("\n--- Cloudflare KV Namespaces ---");
+    //         if (kvData.result.length === 0) {
+    //             console.log("No KV namespaces found.");
+    //         }
+    //         else {
+    //             kvData.result.forEach((ns: KVNamespace) => {
+    //                 console.log(`  - Title: ${ns.title}, ID: ${ns.id}`);
+    //             });
+    //         }
+    //     }
+    // } catch (error) {
+    //     console.error("Could not fetch KV namespace information.");
+    // }
 }
