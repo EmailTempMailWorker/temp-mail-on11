@@ -2,6 +2,7 @@ import app from "@/app";
 
 import { handleEmail } from "@/handlers/emailHandler";
 import { handleScheduled } from "@/handlers/scheduledHandler";
+import type { CloudflareBindings } from "@/types/env";
 
 export default {
 	// Hono ( Cloudflare Worker )

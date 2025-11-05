@@ -13,6 +13,8 @@ import {
 	getEmailAttachmentsRoute,
 } from "@/schemas/attachments/routeDefinitions";
 
+import type { CloudflareBindings } from "@/types/env";
+
 // Utility imports
 import { ERR, OK } from "@/utils/http";
 import { validateEmailDomain } from "@/utils/validation";
@@ -97,15 +99,15 @@ attachmentRoutes.openapi(deleteAttachmentRoute, async (c) => {
 	if (dbError) return c.json(ERR(dbError.message, "ValidationError"), 400);
 	if (!attachment) return c.json(ERR("Attachment not found", "NotFound"), 404);
 
-	// Delete from R2
-	const { success: r2Success, error: r2Error } = await r2.deleteAttachment(
-		c.env.R2,
-		attachment.r2_key,
-	);
-	if (!r2Success) {
-		console.error("Failed to delete attachment from R2:", r2Error);
-		// Continue with database deletion even if R2 deletion fails
-	}
+	// // Delete from R2
+	// const { success: r2Success, error: r2Error } = await r2.deleteAttachment(
+	// 	c.env.R2,
+	// 	attachment.r2_key,
+	// );
+	// if (!r2Success) {
+	// 	console.error("Failed to delete attachment from R2:", r2Error);
+	// 	// Continue with database deletion even if R2 deletion fails
+	// }
 
 	// Delete from database
 	const { success: dbSuccess, error: dbDeleteError } =

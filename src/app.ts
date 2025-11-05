@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import attachmentRoutes from "@/routes/attachmentRoutes";
 import emailRoutes from "@/routes/emailRoutes";
+import type { CloudflareBindings } from "@/types/env";
 import { setupDocumentation } from "@/utils/docs";
 import { logError } from "@/utils/logger";
 import corsMiddleware from "./middlewares/cors";

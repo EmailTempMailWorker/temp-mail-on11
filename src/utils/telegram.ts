@@ -1,21 +1,27 @@
+import type { CloudflareBindings } from "@/types/env";
 import { logInfo } from "@/utils/logger";
 
-export async function sendMessage(text: string, env: CloudflareBindings) {
-	if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
-		logInfo("Telegram logging is disabled.");
+export async function sendMessage(
+	text: string,
+	env: CloudflareBindings,
+	chatId?: string | number, // <-- добавили параметр опционально
+) {
+	if (!env.TELEGRAM_BOT_TOKEN) {
+		logInfo("Telegram bot token not set");
 		return;
 	}
 
 	const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+
 	await fetch(url, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({
-			chat_id: env.TELEGRAM_CHAT_ID,
+			chat_id: chatId,
 			text,
-			parse_mode: "HTML",
+			parse_mode: "Markdown",
 		}),
-	});
+	}).catch((err) => console.error("Telegram send error:", err));
 }
 
 export async function handleTelegramUpdate(body: any, env: CloudflareBindings): Promise<Response> {
@@ -23,15 +29,23 @@ export async function handleTelegramUpdate(body: any, env: CloudflareBindings): 
 	if (!message?.text) return new Response("OK", { status: 200 });
 
 	const chatId = message.chat.id.toString();
+	const text = message.text.trim();
+
+	// === Если НЕ админ ===
 	if (chatId !== env.TELEGRAM_CHAT_ID) {
-		await sendMessage("Доступ пока закрыт. Бот в разработке.", env);
+		await sendMessage("Доступ пока закрыт. Бот в разработке.", env, chatId);
 		return new Response("OK", { status: 200 });
 	}
 
-	if (message.text === "/start") {
+	// === Если админ ===
+	if (text === "/start") {
 		await sendMessage(
-			`<b>Привет!</b>\n\nПочта приходит сюда автоматически.\n\n/start — это всё, что пока есть`,
+			`<b>Привет, админ!</b>\n\n` +
+				`Этот бот получает всю почту с временных ящиков.\n\n` +
+				`Новые письма приходят сюда автоматически.\n\n` +
+				`<i>Скоро будет /refresh</i>`,
 			env,
+			chatId,
 		);
 	}
 

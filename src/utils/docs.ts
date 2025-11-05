@@ -2,6 +2,7 @@ import { swaggerUI } from "@hono/swagger-ui";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 import { DOMAINS_SET } from "@/config/domains";
+import type { CloudflareBindings } from "@/types/env";
 
 export function setupDocumentation(app: OpenAPIHono<{ Bindings: CloudflareBindings }>) {
 	// OpenAPI Documentation

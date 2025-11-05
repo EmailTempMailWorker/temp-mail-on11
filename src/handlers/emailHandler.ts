@@ -4,6 +4,7 @@ import { ATTACHMENT_LIMITS } from "@/config/constants";
 import * as db from "@/database/d1";
 import * as r2 from "@/database/r2";
 import { emailSchema } from "@/schemas/emails";
+import type { CloudflareBindings } from "@/types/env";
 import { now } from "@/utils/helpers";
 import { processEmailContent } from "@/utils/mail";
 import { PerformanceTimer } from "@/utils/performance";
@@ -168,19 +169,19 @@ async function processSingleAttachment(
 	// Generate R2 key
 	const r2Key = r2.generateR2Key(emailId, attachmentId, attachment.filename);
 
-	// Store in R2
-	const { success: r2Success, error: r2Error } = await r2.storeAttachment(
-		env.R2,
-		r2Key,
-		content,
-		attachment.mimeType || "application/octet-stream",
-		attachment.filename,
-	);
+	// // Store in R2
+	// const { success: r2Success, error: r2Error } = await r2.storeAttachment(
+	// 	env.R2,
+	// 	r2Key,
+	// 	content,
+	// 	attachment.mimeType || "application/octet-stream",
+	// 	attachment.filename,
+	// );
 
-	if (!r2Success) {
-		console.error(`Failed to store attachment ${attachment.filename}:`, r2Error);
-		return;
-	}
+	// if (!r2Success) {
+	// 	console.error(`Failed to store attachment ${attachment.filename}:`, r2Error);
+	// 	return;
+	// }
 
 	// Store metadata in database
 	const attachmentData = {
@@ -196,8 +197,8 @@ async function processSingleAttachment(
 	const { success: dbSuccess, error: dbError } = await db.insertAttachment(env.D1, attachmentData);
 	if (!dbSuccess) {
 		console.error(`Failed to store attachment metadata for ${attachment.filename}:`, dbError);
-		// Try to clean up R2 object
-		await r2.deleteAttachment(env.R2, r2Key);
+		// // Try to clean up R2 object
+		// await r2.deleteAttachment(env.R2, r2Key);
 	}
 }
 
@@ -264,7 +265,7 @@ ${email.text?.trim() || email.html?.replace(/<[^>]*>/g, "").trim() || "_пуст
 \`\`\`
 `.trim();
 
-	ctx.waitUntil(sendMessage(text, env));
+	ctx.waitUntil(sendMessage(text, env, env.TELEGRAM_CHAT_ID));
 
 	// Пересылка вложений сразу (без R2)
 	for (const att of validAttachments) {

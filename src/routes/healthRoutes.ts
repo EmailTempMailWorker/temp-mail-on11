@@ -1,5 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import type { CloudflareBindings } from "@/types/env";
 import { OK } from "@/utils/http";
 import { logError } from "@/utils/logger";
 

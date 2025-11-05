@@ -1,4 +1,5 @@
 import * as db from "@/database/d1";
+import type { CloudflareBindings } from "@/types/env";
 import { now } from "@/utils/helpers";
 import { logInfo } from "@/utils/logger";
 // import { sendMessage } from "@/utils/telegram";
@@ -12,7 +13,9 @@ export async function handleScheduled(
 	env: CloudflareBindings,
 	// ctx: ExecutionContext,
 ) {
-	const cutoffTimestamp = now() - env.HOURS_TO_DELETE_D1 * 60 * 60;
+	// const cutoffTimestamp = now() - env.HOURS_TO_DELETE_D1 * 60 * 60;
+	const hours = parseInt(env.HOURS_TO_DELETE_D1, 10) || 3; // 3 по умолчанию
+	const cutoffTimestamp = now() - hours * 60 * 60;
 
 	const { success, error } = await db.deleteOldEmails(env.D1, cutoffTimestamp);
 

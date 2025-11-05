@@ -18,6 +18,8 @@ import {
 	getEmailsRoute,
 } from "@/schemas/emails/routeDefinitions";
 
+import type { CloudflareBindings } from "@/types/env";
+
 // Utility imports
 import { ERR, OK } from "@/utils/http";
 import { validateEmailDomain } from "@/utils/validation";

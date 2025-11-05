@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { CloudflareBindings } from "@/types/env";
 import { handleTelegramUpdate } from "@/utils/telegram";
 
 export const telegramRoutes = new Hono<{ Bindings: CloudflareBindings }>();
