@@ -1,3 +1,8 @@
+-- Index for mailboxes tables
+CREATE INDEX IF NOT EXISTS idx_mailboxes_user_status ON mailboxes (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_mailboxes_expires ON mailboxes (expires_at);
+CREATE INDEX IF NOT EXISTS idx_mailboxes_email ON mailboxes (email);
+
 -- Composite index for the main query pattern (filter by to_address, order by received_at)
 CREATE INDEX IF NOT EXISTS idx_emails_to_address_received_at ON emails (to_address, received_at DESC);
 

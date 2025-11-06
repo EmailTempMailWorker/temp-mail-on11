@@ -1,3 +1,19 @@
+CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT PRIMARY KEY,
+    max_boxes INTEGER DEFAULT 3,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS mailboxes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    user_id TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'expired')),
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS emails (
     id TEXT PRIMARY KEY,
     from_address TEXT NOT NULL,
