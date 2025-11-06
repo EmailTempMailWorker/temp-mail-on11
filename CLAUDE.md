@@ -64,7 +64,10 @@ src/
 │   ├── emails/                # Email-related schemas
 │   └── attachments/           # Attachment-related schemas
 ├── types/                     # Types interface
+│   ├── database.ts/           # Database interface
+│   ├── email.ts/              # Email interface
 │   ├── env.d.ts/              # CloudflareBindings interface
+│   └── telegram.ts/           # Telegram interface
 └── utils/                     # Utility functions
     ├── docs.ts                # OpenAPI documentation setup
     ├── helpers.ts             # Helper functions
