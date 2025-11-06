@@ -5,6 +5,20 @@ import type { CloudflareBindings } from "@/types/env";
 import { sendMessage } from "@/utils/telegram";
 
 // === Обработчики команд ===
+async function handleStart(env: CloudflareBindings, chatId: string): Promise<void> {
+	await sendMessage(
+		`<b>Привет!</b>\n\n` +
+			`Временные почтовые ящики.\n\n` +
+			`Команды:\n` +
+			`/create — создать новый ящик\n` +
+			`/list — мои ящики\n` +
+			`/select &lt;email&gt; — арендовать ящик\n` +
+			`/emails &lt;email&gt; — письма`,
+		env,
+		chatId,
+	);
+}
+
 async function handleCreate(
 	db: MailboxDB,
 	userId: string,
@@ -93,6 +107,10 @@ export async function handleUserCommand(
 
 	try {
 		switch (command) {
+			case "/start":
+				await handleStart(env, chatId);
+				break;
+
 			case "/create":
 				await handleCreate(db, userId, env, chatId);
 				break;

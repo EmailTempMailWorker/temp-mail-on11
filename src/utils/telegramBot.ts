@@ -13,32 +13,6 @@ export async function handleTelegramBotUpdate(
 	const chatId = message.chat.id.toString();
 	const text = message.text.trim();
 
-	//     // === Обычный пользователь ===
-	//   if (chatId !== env.TELEGRAM_CHAT_ID) {
-	//     const command = text.split(" ")[0];
-	//     const args = text.slice(command.length).trim();
-
-	//     switch (command) {
-	//       case "/start":
-	//         await sendTelegramMessage(
-	//           `<b>Привет!</b>\n\n` +
-	//             `Временные почтовые ящики.\n\n` +
-	//             `Команды:\n` +
-	//             `/create — создать новый ящик\n` +
-	//             `/list — мои ящики\n` +
-	//             `/select <email> — арендовать ящик\n` +
-	//             `/emails <email> — письма`,
-	//           env,
-	//           chatId,
-	//         );
-	//         break;
-
-	//       default:
-	//         await sendTelegramMessage("Неизвестная команда. Используй /start", env, chatId);
-	//     }
-	//     return new Response("OK", { status: 200 });
-	//   }
-
 	if (chatId !== env.TELEGRAM_CHAT_ID) {
 		const [cmd, ...rest] = text.split(" ");
 		const args = rest.join(" ");
