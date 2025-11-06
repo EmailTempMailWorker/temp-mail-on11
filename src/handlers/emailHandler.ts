@@ -4,6 +4,7 @@ import { ATTACHMENT_LIMITS } from "@/config/constants";
 import * as db from "@/database/d1";
 import * as r2 from "@/database/r2";
 import { emailSchema } from "@/schemas/emails";
+import type { Email } from "@/types/email";
 import type { CloudflareBindings } from "@/types/env";
 import { now } from "@/utils/helpers";
 import { processEmailContent } from "@/utils/mail";
@@ -247,5 +248,33 @@ ${bodyText}
 				body: form,
 			}).catch((err) => console.error("Telegram sendDocument failed:", err)),
 		);
+	}
+}
+
+export async function getMessages(
+	env: CloudflareBindings,
+	domain: string,
+	login: string,
+): Promise<Email[]> {
+	const email = `${login}@${domain}`;
+
+	try {
+		const { results } = await env.D1.prepare(
+			`SELECT 
+           id, from_address, to_address, subject, 
+           received_at, html_content, text_content, 
+           has_attachments, attachment_count
+         FROM emails 
+         WHERE to_address = ? 
+         ORDER BY received_at DESC 
+         LIMIT 10`,
+		)
+			.bind(email)
+			.all<Email>();
+
+		return results || [];
+	} catch (error) {
+		console.error("Failed to fetch emails:", error);
+		return [];
 	}
 }
