@@ -356,3 +356,41 @@ export async function getEmailsWithAttachments(
 		return { results: [], emails: [], error };
 	}
 }
+
+// src/database/d1.ts
+export async function getMailboxByEmail(db: D1Database, email: string) {
+	const stmt = db.prepare(`
+		SELECT user_id, expires_at, status
+		FROM mailboxes
+		WHERE email = ? AND status = 'active'
+		LIMIT 1
+	`);
+
+	const row = await stmt.bind(email).first();
+	if (!row) return null;
+
+	// Явно указываем типы
+	const user_id = row.user_id as string;
+	const expires_at_raw = row.expires_at; // string | number | Date | null
+	//const status = row.status as string;
+
+	// Приводим expires_at к UNIX timestamp (в секундах)
+	let expiresAt: number;
+	if (typeof expires_at_raw === "string") {
+		expiresAt = Math.floor(new Date(expires_at_raw).getTime() / 1000);
+	} else if (expires_at_raw instanceof Date) {
+		expiresAt = Math.floor(expires_at_raw.getTime() / 1000);
+	} else if (typeof expires_at_raw === "number") {
+		expiresAt = expires_at_raw;
+	} else {
+		console.warn(`Invalid expires_at type for email ${email}:`, expires_at_raw);
+		return null;
+	}
+
+	const now = Math.floor(Date.now() / 1000);
+	if (expiresAt < now) {
+		return null;
+	}
+
+	return { user_id };
+}

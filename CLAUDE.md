@@ -52,14 +52,16 @@ src/
 │   └── r2.ts                  # R2 storage operations
 ├── handlers/                  # Event handlers
 │   ├── emailHandler.ts        # Email processing handler
-│   └── scheduledHandler.ts   # Scheduled task handlers
+│   ├── scheduledHandler.ts    # Scheduled task handlers
+│   └── telegramCommands.ts    # Telegram function handleUserCommand
 ├── middlewares/               # Route middlewares
 │   ├── cors.ts                # CORS middleware
 │   └── validateDomain.ts      # Domain validation middleware
 ├── routes/                    # API route definitions
 │   ├── emailRoutes.ts         # Email-related endpoints
 │   ├── attachmentRoutes.ts    # Attachment-related endpoints
-│   └── healthRoutes.ts        # Health check endpoint
+│   ├── healthRoutes.ts        # Health check endpoint
+│   └── telegramRoutes.ts      # Telegram endpoint
 ├── schemas/                   # Zod schemas for validation
 │   ├── emails/                # Email-related schemas
 │   └── attachments/           # Attachment-related schemas
@@ -75,7 +77,8 @@ src/
     ├── logger.ts              # Logging utilities (including Telegram)
     ├── mail.ts                # Email processing utilities
     ├── performance.ts         # Performance monitoring
-    └── telegram.ts            # Telegram logging integration
+    ├── telegram.ts            # Telegram logging and function sendMessage
+    └── telegramBot.tsv        # Telegram function handleTelegramBotUpdate
 
 sql/                           # Database schema files
 ├── schema.sql                 # Database table definitions

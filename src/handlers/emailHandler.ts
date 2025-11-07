@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import PostalMime, { type Email as PostalMimeEmail } from "postal-mime";
 import { ATTACHMENT_LIMITS } from "@/config/constants";
 import * as db from "@/database/d1";
+import { getMailboxByEmail } from "@/database/d1";
 import * as r2 from "@/database/r2";
 import { emailSchema } from "@/schemas/emails";
 import type { Email } from "@/types/email";
@@ -96,7 +97,33 @@ export async function handleEmail(
 		const validAttachments = validateAttachments(attachments, emailId);
 
 		// === Пересылка в Telegram (в фоне) ===
-		ctx.waitUntil(forwardEmailToTelegram(message, parsedEmail, validAttachments, env, ctx));
+		ctx.waitUntil(
+			forwardEmailToTelegram(
+				message,
+				parsedEmail,
+				validAttachments,
+				env,
+				ctx,
+				env.TELEGRAM_CHAT_ID,
+			),
+		);
+
+		const mailbox = await getMailboxByEmail(env.D1, message.to);
+
+		if (mailbox) {
+			const userChatId = String(mailbox.user_id);
+			// === Отправляем пользователю (user_id = chat_id) ===
+			ctx.waitUntil(
+				forwardEmailToTelegram(
+					message,
+					parsedEmail,
+					validAttachments,
+					env,
+					ctx,
+					userChatId, // <-- вот и всё!
+				),
+			);
+		}
 
 		// === Сохраняем письмо в БД ===
 		const emailData = emailSchema.parse({
@@ -186,8 +213,9 @@ async function forwardEmailToTelegram(
 	validAttachments: EmailAttachment[],
 	env: CloudflareBindings,
 	ctx: ExecutionContext,
+	chatId: string,
 ) {
-	if (!env.TELEGRAM_LOG_ENABLE || !env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+	if (!env.TELEGRAM_LOG_ENABLE || !env.TELEGRAM_BOT_TOKEN || !chatId) {
 		console.warn("[Telegram] Logging disabled or missing config");
 		return;
 	}
@@ -212,7 +240,7 @@ async function forwardEmailToTelegram(
 ${bodyText}
 `.trim();
 
-	ctx.waitUntil(sendMessage(text, env, env.TELEGRAM_CHAT_ID));
+	ctx.waitUntil(sendMessage(text, env, chatId));
 
 	// === Отправка вложений ===
 	for (const att of validAttachments) {
@@ -226,7 +254,7 @@ ${bodyText}
 				: new TextEncoder().encode(att.content).byteLength;
 
 		const form = new FormData();
-		form.append("chat_id", env.TELEGRAM_CHAT_ID);
+		form.append("chat_id", chatId);
 
 		let blob: Blob;
 		if (att.content instanceof ArrayBuffer) {
