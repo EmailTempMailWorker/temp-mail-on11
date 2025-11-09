@@ -20,6 +20,27 @@ async function handleStart(env: CloudflareBindings, chatId: string): Promise<voi
 }
 
 async function handleCreate(
+	//db: MailboxDB,
+	//userId: string,
+	env: CloudflareBindings,
+	chatId: string,
+): Promise<void> {
+	//const { email, expiresAt } = await db.create(userId);
+	await sendMessage(
+		`<b>Создание ящика</b>\n\n` +
+			`Выберите способ:\n` +
+			`• /auto — сгенерировать автоматически\n` +
+			`• /custom <имя> — указать свой вариант`,
+		//`<b>Ящик создан!</b>\n\n` +
+		//	`Email: <code>${email}</code>\n` +
+		//	`Истекает: ${new Date(expiresAt).toLocaleString()}\n\n` +
+		//	`Письма: /emails ${email}`,
+		env,
+		chatId,
+	);
+}
+
+async function handleAutoCreate(
 	db: MailboxDB,
 	userId: string,
 	env: CloudflareBindings,
@@ -27,7 +48,38 @@ async function handleCreate(
 ): Promise<void> {
 	const { email, expiresAt } = await db.create(userId);
 	await sendMessage(
-		`<b>Ящик создан!</b>\n\n` +
+		`<b>Автоматически создан ящик:</b>\n` +
+			`Email: <code>${email}</code>\n` +
+			`Истекает: ${new Date(expiresAt).toLocaleString()}\n\n` +
+			`Письма: /emails ${email}`,
+		env,
+		chatId,
+	);
+}
+
+async function handleCustomCreate(
+	db: MailboxDB,
+	userId: string,
+	customLogin: string,
+	env: CloudflareBindings,
+	chatId: string,
+): Promise<void> {
+	const domain = "temp-mail.on11";
+	const email = `${customLogin.toLowerCase()}@${domain}`;
+
+	const exists = await db.exists(email);
+	if (exists) {
+		await sendMessage(
+			`❌ Ящик <code>${email}</code> уже занят. Попробуйте другое имя.`,
+			env,
+			chatId,
+		);
+		return;
+	}
+
+	const { expiresAt } = await db.createCustom(userId, email);
+	await sendMessage(
+		`<b>Ящик создан!</b>\n` +
 			`Email: <code>${email}</code>\n` +
 			`Истекает: ${new Date(expiresAt).toLocaleString()}\n\n` +
 			`Письма: /emails ${email}`,
@@ -112,7 +164,7 @@ export async function handleUserCommand(
 				break;
 
 			case "/create":
-				await handleCreate(db, userId, env, chatId);
+				await handleCreate(env, chatId); //db, userId, env, chatId);
 				break;
 
 			case "/list":
@@ -125,6 +177,18 @@ export async function handleUserCommand(
 
 			case "/emails":
 				await handleEmails(env, args, chatId);
+				break;
+
+			case "/auto":
+				await handleAutoCreate(db, userId, env, chatId);
+				break;
+
+			case "/custom":
+				if (!args) {
+					await sendMessage("Использование: /custom <имя>", env, chatId);
+					break;
+				}
+				await handleCustomCreate(db, userId, args, env, chatId);
 				break;
 
 			default:

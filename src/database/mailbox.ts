@@ -79,6 +79,52 @@ export class MailboxDB {
 		throw new Error("Не удалось создать ящик");
 	}
 
+	async exists(email: string): Promise<boolean> {
+		const result = await this.db
+			.prepare(`SELECT 1 FROM mailboxes WHERE email = ? LIMIT 1`)
+			.bind(email)
+			.first();
+		return !!result;
+	}
+
+	async createCustom(userId: string, email: string): Promise<{ expiresAt: string }> {
+		await this.ensureUser(userId);
+
+		const count = await this.getActiveCount(userId);
+		const max = await this.db
+			.prepare(`SELECT max_boxes FROM users WHERE user_id = ?`)
+			.bind(userId)
+			.first<number>("max_boxes");
+
+		if (count >= (max || 3)) {
+			throw new Error("Лимит ящиков исчерпан");
+		}
+
+		const exists = await this.exists(email);
+		if (exists) {
+			throw new Error("Ящик уже существует");
+		}
+
+		const expiresAt = new Date(Date.now() + RENTAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+		try {
+			await this.db
+				.prepare(
+					`INSERT INTO mailboxes (email, user_id, expires_at, status) VALUES (?, ?, ?, 'active')`,
+				)
+				.bind(email, userId, expiresAt)
+				.run();
+		} catch (e) {
+			const err = e as Error;
+			if (err.message.includes("UNIQUE")) {
+				throw new Error("Ящик уже существует");
+			}
+			throw err;
+		}
+
+		return { expiresAt };
+	}
+
 	async list(userId: string): Promise<{ own: Mailbox[]; available: Mailbox[] }> {
 		await this.expireAll();
 
