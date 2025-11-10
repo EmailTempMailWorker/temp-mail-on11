@@ -29,8 +29,8 @@ async function handleCreate(
 	await sendMessage(
 		`<b>Создание ящика</b>\n\n` +
 			`Выберите способ:\n` +
-			`• /auto — сгенерировать автоматически\n` +
-			`• /custom <имя> — указать свой вариант`,
+			`/auto — сгенерировать автоматически\n` +
+			`/custom <имя> — указать свой вариант`,
 		//`<b>Ящик создан!</b>\n\n` +
 		//	`Email: <code>${email}</code>\n` +
 		//	`Истекает: ${new Date(expiresAt).toLocaleString()}\n\n` +
@@ -64,7 +64,7 @@ async function handleCustomCreate(
 	env: CloudflareBindings,
 	chatId: string,
 ): Promise<void> {
-	const domain = "temp-mail.on11";
+	const domain = "on11.ru";
 	const email = `${customLogin.toLowerCase()}@${domain}`;
 
 	const exists = await db.exists(email);
@@ -155,7 +155,7 @@ export async function handleUserCommand(
 	env: CloudflareBindings,
 ): Promise<void> {
 	console.log(`[BOT] Получена команда: "${command}" от chatId: ${chatId}, args: "${args}"`);
-	
+
 	const db = new MailboxDB(env);
 	const userId = chatId;
 
@@ -189,7 +189,7 @@ export async function handleUserCommand(
 
 			case "/custom":
 				if (!args) {
-					await sendMessage("Использование: /custom <имя>", env, chatId);
+					await sendMessage("Использование: /custom &lt;имя&gt;", env, chatId);
 					break;
 				}
 				await handleCustomCreate(db, userId, args, env, chatId);
