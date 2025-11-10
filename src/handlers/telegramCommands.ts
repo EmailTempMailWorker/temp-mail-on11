@@ -30,7 +30,7 @@ async function handleCreate(
 		`<b>Создание ящика</b>\n\n` +
 			`Выберите способ:\n` +
 			`/auto — сгенерировать автоматически\n` +
-			`/custom <имя> — указать свой вариант`,
+			`/custom &lt;имя&gt; — указать свой вариант`,
 		//`<b>Ящик создан!</b>\n\n` +
 		//	`Email: <code>${email}</code>\n` +
 		//	`Истекает: ${new Date(expiresAt).toLocaleString()}\n\n` +
