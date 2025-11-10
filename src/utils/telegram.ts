@@ -14,6 +14,8 @@ export async function sendMessage(
 
 	const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
 
+	console.log(`[TG] → Отправка в ${chatId}: ${text.substring(0, 50)}...`);
+
 	await fetch(url, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },

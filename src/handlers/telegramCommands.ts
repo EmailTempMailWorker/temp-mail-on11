@@ -154,6 +154,8 @@ export async function handleUserCommand(
 	chatId: string,
 	env: CloudflareBindings,
 ): Promise<void> {
+	console.log(`[BOT] Получена команда: "${command}" от chatId: ${chatId}, args: "${args}"`);
+	
 	const db = new MailboxDB(env);
 	const userId = chatId;
 
@@ -164,7 +166,9 @@ export async function handleUserCommand(
 				break;
 
 			case "/create":
-				await handleCreate(env, chatId); //db, userId, env, chatId);
+				console.log("[BOT] /create — НАЧАЛО");
+				await handleCreate(env, chatId);
+				console.log("[BOT] /create — КОНЕЦ");
 				break;
 
 			case "/list":
