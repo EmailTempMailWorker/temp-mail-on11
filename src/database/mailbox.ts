@@ -1,7 +1,18 @@
 import type { CloudflareBindings } from "@/types/env";
 
-const RENTAL_DAYS = 1;
 const ON_DOMAIN = "on11.ru";
+
+// Типы ролей и их настройки
+interface RoleConfig {
+	maxBoxes: number;
+	rentalHours: number; // в часах
+}
+
+const ROLE_CONFIGS: Record<string, RoleConfig> = {
+	regular: { maxBoxes: 3, rentalHours: 1 },
+	vip: { maxBoxes: 10, rentalHours: 7 * 24 }, // неделя
+	admin: { maxBoxes: 1000, rentalHours: 180 * 24 }, // полгода
+};
 
 export interface Mailbox {
 	email: string;
@@ -23,14 +34,40 @@ export class MailboxDB {
 		return `${prefix}@${ON_DOMAIN}`;
 	}
 
-	async ensureUser(userId: string, maxBoxes = 3): Promise<void> {
+	// Получение конфига роли (с дефолтом regular)
+	private async getRoleConfig(userId: string): Promise<RoleConfig> {
+		const roleResult = await this.db
+			.prepare(`SELECT role FROM user_roles WHERE user_id = ?`)
+			.bind(userId)
+			.first<{ role: string }>();
+
+		const role = roleResult?.role || "regular";
+		return ROLE_CONFIGS[role] || ROLE_CONFIGS.regular;
+	}
+
+	// Синхронизация users.max_boxes с актуальной ролью
+	private async syncUserLimits(userId: string): Promise<RoleConfig> {
+		const config = await this.getRoleConfig(userId);
+
 		await this.db
 			.prepare(
-				`INSERT INTO users (user_id, max_boxes) VALUES (?, ?) 
+				`INSERT INTO users (user_id, max_boxes) VALUES (?, ?)
          ON CONFLICT(user_id) DO UPDATE SET max_boxes = excluded.max_boxes`,
 			)
-			.bind(userId, maxBoxes)
+			.bind(userId, config.maxBoxes)
 			.run();
+
+		return config;
+	}
+
+	async ensureUser(userId: string): Promise<RoleConfig> {
+		// Убедимся, что роль существует (по умолчанию regular)
+		await this.db
+			.prepare(`INSERT OR IGNORE INTO user_roles (user_id, role) VALUES (?, 'regular')`)
+			.bind(userId)
+			.run();
+
+		return await this.syncUserLimits(userId);
 	}
 
 	async getActiveCount(userId: string): Promise<number> {
@@ -41,16 +78,33 @@ export class MailboxDB {
 		return result?.count || 0;
 	}
 
-	async create(userId: string): Promise<{ email: string; expiresAt: string }> {
-		await this.ensureUser(userId);
+	private getMoscowNow(): Date {
+		const now = new Date();
+		const MSK_OFFSET_MINUTES = 180; // UTC+3
+		return new Date(now.getTime() + MSK_OFFSET_MINUTES * 60 * 1000);
+	}
 
+	// Форматирование даты в МСК, 24-часовой формат
+	private formatMoscowTime(date: Date): string {
+		return date.toLocaleString("ru-RU", {
+			timeZone: "Europe/Moscow",
+			hour12: false,
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+		});
+	}
+
+	async create(
+		userId: string,
+	): Promise<{ email: string; expiresAt: string; expiresAtFormatted: string }> {
+		const config = await this.ensureUser(userId);
 		const count = await this.getActiveCount(userId);
-		const max = await this.db
-			.prepare(`SELECT max_boxes FROM users WHERE user_id = ?`)
-			.bind(userId)
-			.first<number>("max_boxes");
 
-		if (count >= (max || 3)) {
+		if (count >= config.maxBoxes) {
 			throw new Error("Лимит ящиков исчерпан");
 		}
 
@@ -60,16 +114,21 @@ export class MailboxDB {
 		while (!inserted) {
 			email = this.generateEmail();
 			try {
-				const expiresAt = new Date(Date.now() + RENTAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+				const nowInMoscow = this.getMoscowNow();
+				const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
+				//const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
+				const expiresAtISO = expiresAt.toISOString();
+				const expiresAtFormatted = this.formatMoscowTime(expiresAt);
+
 				await this.db
 					.prepare(
 						`INSERT INTO mailboxes (email, user_id, expires_at, status) VALUES (?, ?, ?, 'active')`,
 					)
-					.bind(email, userId, expiresAt)
+					.bind(email, userId, expiresAtISO)
 					.run();
+
 				inserted = true;
-				// email гарантированно определён после успешного INSERT
-				return { email, expiresAt };
+				return { email, expiresAt: expiresAtISO, expiresAtFormatted };
 			} catch (e) {
 				const err = e as Error;
 				if (!err.message.includes("UNIQUE")) throw err;
@@ -87,16 +146,14 @@ export class MailboxDB {
 		return !!result;
 	}
 
-	async createCustom(userId: string, email: string): Promise<{ expiresAt: string }> {
-		await this.ensureUser(userId);
-
+	async createCustom(
+		userId: string,
+		email: string,
+	): Promise<{ expiresAt: string; expiresAtFormatted: string }> {
+		const config = await this.ensureUser(userId);
 		const count = await this.getActiveCount(userId);
-		const max = await this.db
-			.prepare(`SELECT max_boxes FROM users WHERE user_id = ?`)
-			.bind(userId)
-			.first<number>("max_boxes");
 
-		if (count >= (max || 3)) {
+		if (count >= config.maxBoxes) {
 			throw new Error("Лимит ящиков исчерпан");
 		}
 
@@ -105,14 +162,18 @@ export class MailboxDB {
 			throw new Error("Ящик уже существует");
 		}
 
-		const expiresAt = new Date(Date.now() + RENTAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+		const nowInMoscow = this.getMoscowNow();
+		const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
+		//const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
+		const expiresAtISO = expiresAt.toISOString();
+		const expiresAtFormatted = this.formatMoscowTime(expiresAt);
 
 		try {
 			await this.db
 				.prepare(
 					`INSERT INTO mailboxes (email, user_id, expires_at, status) VALUES (?, ?, ?, 'active')`,
 				)
-				.bind(email, userId, expiresAt)
+				.bind(email, userId, expiresAtISO)
 				.run();
 		} catch (e) {
 			const err = e as Error;
@@ -122,18 +183,29 @@ export class MailboxDB {
 			throw err;
 		}
 
-		return { expiresAt };
+		return { expiresAt: expiresAtISO, expiresAtFormatted };
 	}
 
-	async list(userId: string): Promise<{ own: Mailbox[]; available: Mailbox[] }> {
+	async list(userId: string): Promise<{
+		own: (Mailbox & { expiresAtFormatted: string })[];
+		available: Mailbox[];
+	}> {
 		await this.expireAll();
 
-		const own = await this.db
+		const ownRaw = await this.db
 			.prepare(
 				`SELECT email, created_at, expires_at, status FROM mailboxes WHERE user_id = ? AND status = 'active'`,
 			)
 			.bind(userId)
-			.all<Mailbox>();
+			.all<Mailbox & { expires_at: string }>();
+
+		const own = (ownRaw.results || []).map((mailbox) => {
+			const expiresAt = new Date(mailbox.expires_at);
+			return {
+				...mailbox,
+				expiresAtFormatted: this.formatMoscowTime(expiresAt),
+			};
+		});
 
 		const available = await this.db
 			.prepare(
@@ -142,11 +214,17 @@ export class MailboxDB {
 			.bind(userId)
 			.all<Mailbox>();
 
-		return { own: own.results || [], available: available.results || [] };
+		return { own, available: available.results || [] };
 	}
 
-	async select(userId: string, email: string): Promise<void> {
+	async select(userId: string, email: string): Promise<{ expiresAtFormatted: string }> {
 		await this.expireAll();
+
+		const config = await this.getRoleConfig(userId);
+		const count = await this.getActiveCount(userId);
+		if (count >= config.maxBoxes) {
+			throw new Error("Лимит ящиков исчерпан");
+		}
 
 		const exists = await this.db
 			.prepare(`SELECT id, status FROM mailboxes WHERE email = ?`)
@@ -157,11 +235,18 @@ export class MailboxDB {
 			throw new Error("Ящик недоступен");
 		}
 
-		const expiresAt = new Date(Date.now() + RENTAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+		const nowInMoscow = this.getMoscowNow();
+		const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
+		//const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
+		const expiresAtISO = expiresAt.toISOString();
+		const expiresAtFormatted = this.formatMoscowTime(expiresAt);
+
 		await this.db
 			.prepare(`UPDATE mailboxes SET user_id = ?, status = 'active', expires_at = ? WHERE id = ?`)
-			.bind(userId, expiresAt, exists.id)
+			.bind(userId, expiresAtISO, exists.id)
 			.run();
+
+		return { expiresAtFormatted };
 	}
 
 	async getMailboxStatus(email: string, userId: string): Promise<"active" | "expired" | null> {
@@ -174,10 +259,7 @@ export class MailboxDB {
 	}
 
 	async deleteMailbox(userId: string, email: string): Promise<void> {
-		// 1. Удаляем все письма, отправленные на этот email
 		await this.db.prepare(`DELETE FROM emails WHERE to_address = ?`).bind(email).run();
-
-		// 2. Удаляем сам ящик (только если принадлежит пользователю)
 		await this.db
 			.prepare(`DELETE FROM mailboxes WHERE email = ? AND user_id = ?`)
 			.bind(email, userId)
@@ -185,11 +267,34 @@ export class MailboxDB {
 	}
 
 	async expireAll(): Promise<void> {
-		//private async expireAll(): Promise<void> {
 		const now = new Date().toISOString();
 		await this.db
 			.prepare(`UPDATE mailboxes SET status = 'expired' WHERE expires_at < ? AND status = 'active'`)
 			.bind(now)
 			.run();
+	}
+
+	// === УПРАВЛЕНИЕ РОЛЯМИ (для админов / Telegram-бота) ===
+	async setUserRole(userId: string, role: "regular" | "vip" | "admin"): Promise<void> {
+		if (!ROLE_CONFIGS[role]) throw new Error("Недопустимая роль");
+
+		await this.db
+			.prepare(
+				`INSERT INTO user_roles (user_id, role) VALUES (?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET role = excluded.role, updated_at = CURRENT_TIMESTAMP`,
+			)
+			.bind(userId, role)
+			.run();
+
+		// Автоматически обновим лимит ящиков
+		await this.syncUserLimits(userId);
+	}
+
+	async getUserRole(userId: string): Promise<string> {
+		const result = await this.db
+			.prepare(`SELECT role FROM user_roles WHERE user_id = ?`)
+			.bind(userId)
+			.first<{ role: string }>();
+		return result?.role || "regular";
 	}
 }

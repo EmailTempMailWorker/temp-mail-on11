@@ -14,7 +14,7 @@ async function handleStart(env: CloudflareBindings, chatId: string): Promise<voi
 			`/create — создать новый ящик\n` +
 			`/list — мои ящики\n` +
 			`/delete &lt;email&gt; — удалить ящик\n`, //+
-			//`/emails &lt;email&gt; — письма`,
+		//`/emails &lt;email&gt; — письма`,
 		env,
 		chatId,
 	);
@@ -78,8 +78,8 @@ async function handleCustomCreate(
 	await sendMessage(
 		`<b>Ящик создан!</b>\n` +
 			`Email: <code>${email}</code>\n` +
-			`Истекает: ${new Date(expiresAt).toLocaleString()}\n\n` +
-			`Письма: /emails ${email}`,
+			`Истекает: ${new Date(expiresAt).toLocaleString()}`, //\n\n` +
+			//`Письма: /emails ${email}`,
 		env,
 		chatId,
 	);
@@ -100,7 +100,7 @@ async function handleList(
 	else
 		for (const m of own) {
 			text +=
-				`• <code>${m.email}</code>\n` +
+				`• <b><code>${m.email}</code></b>\n` +
 				`  до ${new Date(m.expires_at).toLocaleString()}\n` +
 				`  /delete ${m.email}\n`;
 		}

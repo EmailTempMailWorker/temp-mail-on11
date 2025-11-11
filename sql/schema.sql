@@ -36,3 +36,10 @@ CREATE TABLE IF NOT EXISTS attachments (
     created_at INTEGER NOT NULL,
     FOREIGN KEY (email_id) REFERENCES emails (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS user_roles (
+    user_id TEXT PRIMARY KEY,
+    role TEXT NOT NULL DEFAULT 'regular' CHECK (role IN ('regular', 'vip', 'admin')),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+);
