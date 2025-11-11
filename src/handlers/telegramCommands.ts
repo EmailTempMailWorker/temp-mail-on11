@@ -3,6 +3,7 @@ import { getMessages } from "@/handlers/emailHandler";
 import type { Email } from "@/types/email";
 import type { CloudflareBindings } from "@/types/env";
 import { sendMessage } from "@/utils/telegram";
+import { validateEmailLogin } from "@/utils/validateEmailLogin";
 
 // === Обработчики команд ===
 async function handleStart(env: CloudflareBindings, chatId: string): Promise<void> {
@@ -19,22 +20,12 @@ async function handleStart(env: CloudflareBindings, chatId: string): Promise<voi
 	);
 }
 
-async function handleCreate(
-	//db: MailboxDB,
-	//userId: string,
-	env: CloudflareBindings,
-	chatId: string,
-): Promise<void> {
-	//const { email, expiresAt } = await db.create(userId);
+async function handleCreate(env: CloudflareBindings, chatId: string): Promise<void> {
 	await sendMessage(
 		`<b>Создание ящика</b>\n\n` +
 			`Выберите способ:\n` +
 			`/auto — сгенерировать автоматически\n` +
 			`/custom &lt;имя&gt; — указать свой вариант`,
-		//`<b>Ящик создан!</b>\n\n` +
-		//	`Email: <code>${email}</code>\n` +
-		//	`Истекает: ${new Date(expiresAt).toLocaleString()}\n\n` +
-		//	`Письма: /emails ${email}`,
 		env,
 		chatId,
 	);
@@ -64,6 +55,12 @@ async function handleCustomCreate(
 	env: CloudflareBindings,
 	chatId: string,
 ): Promise<void> {
+	const resultEmailLogin = validateEmailLogin(customLogin);
+	if (!resultEmailLogin.valid) {
+		await sendMessage(`Ошибка: ${resultEmailLogin.error}`, env, chatId);
+		return;
+	}
+
 	const domain = "on11.ru";
 	const email = `${customLogin.toLowerCase()}@${domain}`;
 
@@ -154,8 +151,6 @@ export async function handleUserCommand(
 	chatId: string,
 	env: CloudflareBindings,
 ): Promise<void> {
-	console.log(`[BOT] Получена команда: "${command}" от chatId: ${chatId}, args: "${args}"`);
-
 	const db = new MailboxDB(env);
 	const userId = chatId;
 
@@ -166,9 +161,7 @@ export async function handleUserCommand(
 				break;
 
 			case "/create":
-				console.log("[BOT] /create — НАЧАЛО");
 				await handleCreate(env, chatId);
-				console.log("[BOT] /create — КОНЕЦ");
 				break;
 
 			case "/list":
