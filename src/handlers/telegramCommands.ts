@@ -41,8 +41,9 @@ async function handleAutoCreate(
 	await sendMessage(
 		`<b>Автоматически создан ящик:</b>\n` +
 			`Email: <code>${email}</code>\n` +
-			`Истекает: ${new Date(expiresAt).toLocaleString()}\n\n` +
-			`Письма: /emails ${email}`,
+			`Истекает: ${expiresAt}` +
+			`Истекает: ${new Date(expiresAt).toLocaleString()}`,//\n\n` +
+			//`Письма: /emails ${email}`,
 		env,
 		chatId,
 	);
@@ -101,6 +102,7 @@ async function handleList(
 		for (const m of own) {
 			text +=
 				`• <b><code>${m.email}</code></b>\n` +
+				`  до ${m.expires_at}\n` +
 				`  до ${new Date(m.expires_at).toLocaleString()}\n` +
 				`  /delete ${m.email}\n`;
 		}

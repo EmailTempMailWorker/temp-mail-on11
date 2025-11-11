@@ -92,6 +92,8 @@ export class MailboxDB {
 
 	// Форматирование даты в МСК, 24-часовой формат
 	private formatMoscowTime(date: Date): string {
+		console.log("[FORMAT] Input date (UTC):", date.toISOString());
+		console.log("[FORMAT] Input date (MSK):", date.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" }));
 		return date.toLocaleString("ru-RU", {
 			timeZone: "Europe/Moscow",
 			hour12: false,
@@ -205,8 +207,18 @@ export class MailboxDB {
 			.bind(userId)
 			.all<Mailbox & { expires_at: string }>();
 
+		console.log("[DB] Raw expires_at from DB:", ownRaw.results?.map(r => r.expires_at));
+
 		const own = (ownRaw.results || []).map((mailbox) => {
 			const expiresAt = new Date(mailbox.expires_at);
+
+			const formatted = this.formatMoscowTime(expiresAt);
+			console.log(`[DB] email: ${mailbox.email}`);
+			console.log(`[DB] expires_at (UTC): ${mailbox.expires_at}`);
+			console.log(`[DB] expiresAt Date: ${expiresAt.toISOString()}`);
+			console.log(`[DB] MSK time: ${expiresAt.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`);
+			console.log(`[DB] formatted: ${formatted}`);
+
 			return {
 				...mailbox,
 				expiresAtFormatted: this.formatMoscowTime(expiresAt),
