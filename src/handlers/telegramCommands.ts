@@ -13,8 +13,8 @@ async function handleStart(env: CloudflareBindings, chatId: string): Promise<voi
 			`Команды:\n` +
 			`/create — создать новый ящик\n` +
 			`/list — мои ящики\n` +
-			`/select &lt;email&gt; — арендовать ящик\n` +
-			`/emails &lt;email&gt; — письма`,
+			`/delete &lt;email&gt; — удалить ящик\n`, //+
+			//`/emails &lt;email&gt; — письма`,
 		env,
 		chatId,
 	);
@@ -175,7 +175,7 @@ async function handleDelete(
 	}
 
 	await db.deleteMailbox(userId, normalized);
-	await sendMessage(`Ящик <code>${normalized}</code> и все письма удалены.`, env, chatId);
+	await sendMessage(`Ящик <code>${normalized}</code> удалён.`, env, chatId);
 }
 
 // === Основная функция ===
