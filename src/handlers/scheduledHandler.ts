@@ -1,8 +1,8 @@
 import * as db from "@/database/d1";
+import { MailboxDB } from "@/database/mailbox";
 import type { CloudflareBindings } from "@/types/env";
 import { now } from "@/utils/helpers";
 import { logInfo } from "@/utils/logger";
-// import { sendMessage } from "@/utils/telegram";
 
 /**
  * Cloudflare Scheduled Function
@@ -25,4 +25,23 @@ export async function handleScheduled(
 	} else {
 		throw new Error(`Email cleanup failed: ${error}`);
 	}
+}
+
+export async function cleanupExpiredMailboxes(env: CloudflareBindings): Promise<void> {
+	const db = new MailboxDB(env);
+
+	// 1. Помечаем как expired
+	await db.expireAll();
+
+	// 2. Получаем все expired ящики
+	const expired = await env.D1.prepare(`SELECT email FROM mailboxes WHERE status = 'expired'`).all<{
+		email: string;
+	}>();
+
+	// 3. Удаляем ящики + их письма
+	for (const { email } of expired.results) {
+		await db.deleteMailbox("system", email); // user_id не проверяется
+	}
+
+	console.log(`[CLEANUP] Удалено ${expired.results.length} истёкших ящиков и их писем.`);
 }

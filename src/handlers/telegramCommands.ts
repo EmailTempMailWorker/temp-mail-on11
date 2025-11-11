@@ -91,15 +91,23 @@ async function handleList(
 	env: CloudflareBindings,
 	chatId: string,
 ): Promise<void> {
-	const { own, available } = await db.list(userId);
+	const { own } = await db.list(userId);
+	//const { own, available } = await db.list(userId);
 
 	let text = "<b>Ваши ящики:</b>\n";
 	if (own.length === 0) text += "—\n";
-	else for (const m of own) text += `• <code>${m.email}</code>\n`;
+	// else for (const m of own) text += `• <code>${m.email}</code>\n`;
+	else
+		for (const m of own) {
+			text +=
+				`• <code>${m.email}</code>\n` +
+				`  до ${new Date(m.expires_at).toLocaleString()}\n` +
+				`  /delete ${m.email}\n`;
+		}
 
-	text += "\n<b>Доступные для аренды:</b>\n";
-	if (available.length === 0) text += "—\n";
-	else for (const m of available) text += `• /select ${m.email}\n`;
+	// text += "\n<b>Доступные для аренды:</b>\n";
+	// if (available.length === 0) text += "—\n";
+	// else for (const m of available) text += `• /select ${m.email}\n`;
 
 	await sendMessage(text, env, chatId);
 }
@@ -144,6 +152,32 @@ async function handleEmails(env: CloudflareBindings, args: string, chatId: strin
 	);
 }
 
+async function handleDelete(
+	db: MailboxDB,
+	userId: string,
+	email: string,
+	env: CloudflareBindings,
+	chatId: string,
+): Promise<void> {
+	if (!email.includes("@") || !email.endsWith("@on11.ru")) {
+		await sendMessage("Использование: /delete yourname@on11.ru", env, chatId);
+		return;
+	}
+
+	const normalized = email.toLowerCase().trim();
+
+	// Используем публичный метод
+	const status = await db.getMailboxStatus(normalized, userId);
+
+	if (status !== "active") {
+		await sendMessage(`Ящик <code>${normalized}</code> не найден или не ваш.`, env, chatId);
+		return;
+	}
+
+	await db.deleteMailbox(userId, normalized);
+	await sendMessage(`Ящик <code>${normalized}</code> и все письма удалены.`, env, chatId);
+}
+
 // === Основная функция ===
 export async function handleUserCommand(
 	command: string,
@@ -186,6 +220,10 @@ export async function handleUserCommand(
 					break;
 				}
 				await handleCustomCreate(db, userId, args, env, chatId);
+				break;
+
+			case "/delete":
+				await handleDelete(db, userId, args, env, chatId);
 				break;
 
 			default:

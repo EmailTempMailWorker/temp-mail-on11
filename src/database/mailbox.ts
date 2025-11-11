@@ -164,7 +164,28 @@ export class MailboxDB {
 			.run();
 	}
 
-	private async expireAll(): Promise<void> {
+	async getMailboxStatus(email: string, userId: string): Promise<"active" | "expired" | null> {
+		const result = await this.db
+			.prepare(`SELECT status FROM mailboxes WHERE email = ? AND user_id = ?`)
+			.bind(email, userId)
+			.first<{ status: "active" | "expired" }>();
+
+		return result?.status ?? null;
+	}
+
+	async deleteMailbox(userId: string, email: string): Promise<void> {
+		// 1. Удаляем все письма, отправленные на этот email
+		await this.db.prepare(`DELETE FROM emails WHERE to_address = ?`).bind(email).run();
+
+		// 2. Удаляем сам ящик (только если принадлежит пользователю)
+		await this.db
+			.prepare(`DELETE FROM mailboxes WHERE email = ? AND user_id = ?`)
+			.bind(email, userId)
+			.run();
+	}
+
+	async expireAll(): Promise<void> {
+		//private async expireAll(): Promise<void> {
 		const now = new Date().toISOString();
 		await this.db
 			.prepare(`UPDATE mailboxes SET status = 'expired' WHERE expires_at < ? AND status = 'active'`)
