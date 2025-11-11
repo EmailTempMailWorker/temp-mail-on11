@@ -61,9 +61,15 @@ export class MailboxDB {
 	}
 
 	async ensureUser(userId: string): Promise<RoleConfig> {
-		// Убедимся, что роль существует (по умолчанию regular)
 		await this.db
-			.prepare(`INSERT OR IGNORE INTO user_roles (user_id, role) VALUES (?, 'regular')`)
+			.prepare(`INSERT INTO users (user_id, max_boxes) VALUES (?, 3) ON CONFLICT DO NOTHING`)
+			.bind(userId)
+			.run();
+
+		await this.db
+			.prepare(
+				`INSERT INTO user_roles (user_id, role) VALUES (?, 'regular') ON CONFLICT DO NOTHING`,
+			)
 			.bind(userId)
 			.run();
 

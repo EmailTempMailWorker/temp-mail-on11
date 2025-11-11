@@ -79,7 +79,7 @@ async function handleCustomCreate(
 		`<b>Ящик создан!</b>\n` +
 			`Email: <code>${email}</code>\n` +
 			`Истекает: ${new Date(expiresAt).toLocaleString()}`, //\n\n` +
-			//`Письма: /emails ${email}`,
+		//`Письма: /emails ${email}`,
 		env,
 		chatId,
 	);
