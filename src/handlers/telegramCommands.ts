@@ -37,12 +37,12 @@ async function handleAutoCreate(
 	env: CloudflareBindings,
 	chatId: string,
 ): Promise<void> {
-	const { email, expiresAt } = await db.create(userId);
+	const { email, expiresAtFormatted } = await db.create(userId);
 	await sendMessage(
 		`<b>Автоматически создан ящик:</b>\n` +
 			`Email: <code>${email}</code>\n` +
-			`Истекает: ${expiresAt}` +
-			`Истекает: ${new Date(expiresAt).toLocaleString()}`,//\n\n` +
+			`Истекает: ${expiresAtFormatted}` +
+			`Истекает: ${new Date(expiresAtFormatted).toLocaleString()}`,//\n\n` +
 			//`Письма: /emails ${email}`,
 		env,
 		chatId,
@@ -75,11 +75,12 @@ async function handleCustomCreate(
 		return;
 	}
 
-	const { expiresAt } = await db.createCustom(userId, email);
+	const { expiresAtFormatted } = await db.createCustom(userId, email);
 	await sendMessage(
 		`<b>Ящик создан!</b>\n` +
 			`Email: <code>${email}</code>\n` +
-			`Истекает: ${new Date(expiresAt).toLocaleString()}`, //\n\n` +
+			`Истекает: ${expiresAtFormatted}` +
+			`Истекает: ${new Date(expiresAtFormatted).toLocaleString()}`, //\n\n` +
 		//`Письма: /emails ${email}`,
 		env,
 		chatId,
@@ -102,6 +103,7 @@ async function handleList(
 		for (const m of own) {
 			text +=
 				`• <b><code>${m.email}</code></b>\n` +
+				`  до ${m.expiresAtFormatted}\n` +  // ← ГОТОВАЯ СТРОКА!
 				`  до ${m.expires_at}\n` +
 				`  до ${new Date(m.expires_at).toLocaleString()}\n` +
 				`  /delete ${m.email}\n`;
