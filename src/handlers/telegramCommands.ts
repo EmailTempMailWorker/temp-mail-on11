@@ -74,9 +74,7 @@ async function handleCustomCreate(
 
 	const { expiresAtFormatted } = await db.createCustom(userId, email);
 	await sendMessage(
-		`<b>Ящик создан!</b>\n` +
-			`Email: <code>${email}</code>\n` +
-			`Истекает: ${expiresAtFormatted}`,
+		`<b>Ящик создан!</b>\nEmail: <code>${email}</code>\nИстекает: ${expiresAtFormatted}`,
 		env,
 		chatId,
 	);

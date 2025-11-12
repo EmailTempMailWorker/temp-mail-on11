@@ -8,10 +8,7 @@ import { logInfo } from "@/utils/logger";
  * Cloudflare Scheduled Function
  * Delete emails older than 4 hours
  */
-export async function handleScheduled(
-	_event: ScheduledEvent,
-	env: CloudflareBindings,
-) {
+export async function handleScheduled(_event: ScheduledEvent, env: CloudflareBindings) {
 	const hours = parseInt(env.HOURS_TO_DELETE_D1, 10) || 3; // 3 по умолчанию
 	const cutoffTimestamp = now() - hours * 60 * 60;
 
