@@ -84,10 +84,9 @@ export class MailboxDB {
 		return result?.count || 0;
 	}
 
-	private getMoscowNow(): Date {
-		const now = new Date();
+	private getMoscow(date: Date): Date {
 		const MSK_OFFSET_MINUTES = 180; // UTC+3
-		return new Date(now.getTime() + MSK_OFFSET_MINUTES * 60 * 1000);
+		return new Date(date.getTime() + MSK_OFFSET_MINUTES * 60 * 1000);
 	}
 
 	// Форматирование даты в МСК, 24-часовой формат
@@ -122,11 +121,15 @@ export class MailboxDB {
 		while (!inserted) {
 			email = this.generateEmail();
 			try {
-				const nowInMoscow = this.getMoscowNow();
-				const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
-				//const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
+				const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
 				const expiresAtISO = expiresAt.toISOString();
-				const expiresAtFormatted = this.formatMoscowTime(expiresAt);
+				const expiresAtMoscow = this.getMoscow(expiresAt);
+				const expiresAtFormatted = this.formatMoscowTime(expiresAtMoscow);
+				// const nowInMoscow = this.getMoscowNow();
+				// const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
+				// //const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
+				// const expiresAtISO = expiresAt.toISOString();
+				// const expiresAtFormatted = this.formatMoscowTime(expiresAt);
 
 				await this.db
 					.prepare(
@@ -170,11 +173,16 @@ export class MailboxDB {
 			throw new Error("Ящик уже существует");
 		}
 
-		const nowInMoscow = this.getMoscowNow();
-		const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
-		//const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
+		const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
 		const expiresAtISO = expiresAt.toISOString();
-		const expiresAtFormatted = this.formatMoscowTime(expiresAt);
+		const expiresAtMoscow = this.getMoscow(expiresAt);
+		const expiresAtFormatted = this.formatMoscowTime(expiresAtMoscow);
+
+		// const nowInMoscow = this.getMoscowNow();
+		// const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
+		// //const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
+		// const expiresAtISO = expiresAt.toISOString();
+		// const expiresAtFormatted = this.formatMoscowTime(expiresAt);
 
 		try {
 			await this.db
@@ -253,11 +261,16 @@ export class MailboxDB {
 			throw new Error("Ящик недоступен");
 		}
 
-		const nowInMoscow = this.getMoscowNow();
-		const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
-		//const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
+		const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
 		const expiresAtISO = expiresAt.toISOString();
-		const expiresAtFormatted = this.formatMoscowTime(expiresAt);
+		const expiresAtMoscow = this.getMoscow(expiresAt);
+		const expiresAtFormatted = this.formatMoscowTime(expiresAtMoscow);
+
+		// const nowInMoscow = this.getMoscowNow();
+		// const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
+		// //const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
+		// const expiresAtISO = expiresAt.toISOString();
+		// const expiresAtFormatted = this.formatMoscowTime(expiresAt);
 
 		await this.db
 			.prepare(`UPDATE mailboxes SET user_id = ?, status = 'active', expires_at = ? WHERE id = ?`)
