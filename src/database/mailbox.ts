@@ -84,18 +84,8 @@ export class MailboxDB {
 		return result?.count || 0;
 	}
 
-	// private getMoscow(date: Date): Date {
-	// 	const MSK_OFFSET_MINUTES = 180; // UTC+3
-	// 	return new Date(date.getTime() + MSK_OFFSET_MINUTES * 60 * 1000);
-	// }
-
 	// Форматирование даты в МСК, 24-часовой формат
 	private formatMoscowTime(date: Date): string {
-		console.log("[FORMAT] Input date (UTC):", date.toISOString());
-		console.log(
-			"[FORMAT] Input date (MSK):",
-			date.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" }),
-		);
 		return date.toLocaleString("ru-RU", {
 			timeZone: "Europe/Moscow",
 			hour12: false,
@@ -126,13 +116,7 @@ export class MailboxDB {
 			try {
 				const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
 				const expiresAtISO = expiresAt.toISOString();
-				// const expiresAtMoscow = this.getMoscow(expiresAt);
 				const expiresAtFormatted = this.formatMoscowTime(expiresAt);
-				// const nowInMoscow = this.getMoscowNow();
-				// const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
-				// //const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
-				// const expiresAtISO = expiresAt.toISOString();
-				// const expiresAtFormatted = this.formatMoscowTime(expiresAt);
 
 				await this.db
 					.prepare(
@@ -178,14 +162,7 @@ export class MailboxDB {
 
 		const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
 		const expiresAtISO = expiresAt.toISOString();
-		// const expiresAtMoscow = this.getMoscow(expiresAt);
 		const expiresAtFormatted = this.formatMoscowTime(expiresAt);
-
-		// const nowInMoscow = this.getMoscowNow();
-		// const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
-		// //const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
-		// const expiresAtISO = expiresAt.toISOString();
-		// const expiresAtFormatted = this.formatMoscowTime(expiresAt);
 
 		try {
 			await this.db
@@ -218,22 +195,8 @@ export class MailboxDB {
 			.bind(userId)
 			.all<Mailbox & { expires_at: string }>();
 
-		console.log(
-			"[DB] Raw expires_at from DB:",
-			ownRaw.results?.map((r) => r.expires_at),
-		);
-
 		const own = (ownRaw.results || []).map((mailbox) => {
 			const expiresAt = new Date(mailbox.expires_at);
-
-			const formatted = this.formatMoscowTime(expiresAt);
-			console.log(`[DB] email: ${mailbox.email}`);
-			console.log(`[DB] expires_at (UTC): ${mailbox.expires_at}`);
-			console.log(`[DB] expiresAt Date: ${expiresAt.toISOString()}`);
-			console.log(
-				`[DB] MSK time: ${expiresAt.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`,
-			);
-			console.log(`[DB] formatted: ${formatted}`);
 
 			return {
 				...mailbox,
@@ -271,14 +234,7 @@ export class MailboxDB {
 
 		const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
 		const expiresAtISO = expiresAt.toISOString();
-		// const expiresAtMoscow = this.getMoscow(expiresAt);
 		const expiresAtFormatted = this.formatMoscowTime(expiresAt);
-
-		// const nowInMoscow = this.getMoscowNow();
-		// const expiresAt = new Date(nowInMoscow.getTime() + config.rentalHours * 60 * 60 * 1000);
-		// //const expiresAt = new Date(Date.now() + config.rentalHours * 60 * 60 * 1000);
-		// const expiresAtISO = expiresAt.toISOString();
-		// const expiresAtFormatted = this.formatMoscowTime(expiresAt);
 
 		await this.db
 			.prepare(`UPDATE mailboxes SET user_id = ?, status = 'active', expires_at = ? WHERE id = ?`)

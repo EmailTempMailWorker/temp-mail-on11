@@ -13,8 +13,7 @@ async function handleStart(env: CloudflareBindings, chatId: string): Promise<voi
 			`Команды:\n` +
 			`/create — создать новый ящик\n` +
 			`/list — мои ящики\n` +
-			`/delete &lt;email&gt; — удалить ящик\n`, //+
-		//`/emails &lt;email&gt; — письма`,
+			`/delete &lt;email&gt; — удалить ящик\n`,
 		env,
 		chatId,
 	);
@@ -41,9 +40,7 @@ async function handleAutoCreate(
 	await sendMessage(
 		`<b>Автоматически создан ящик:</b>\n` +
 			`Email: <code>${email}</code>\n` +
-			`Истекает: ${expiresAtFormatted}`, // +
-			//`Истекает: ${new Date(expiresAtFormatted).toLocaleString()}`, //\n\n` +
-		//`Письма: /emails ${email}`,
+			`Истекает: ${expiresAtFormatted}`,
 		env,
 		chatId,
 	);
@@ -79,9 +76,7 @@ async function handleCustomCreate(
 	await sendMessage(
 		`<b>Ящик создан!</b>\n` +
 			`Email: <code>${email}</code>\n` +
-			`Истекает: ${expiresAtFormatted}`, // +
-			// `Истекает: ${new Date(expiresAtFormatted).toLocaleString()}`, //\n\n` +
-		//`Письма: /emails ${email}`,
+			`Истекает: ${expiresAtFormatted}`,
 		env,
 		chatId,
 	);
@@ -94,25 +89,16 @@ async function handleList(
 	chatId: string,
 ): Promise<void> {
 	const { own } = await db.list(userId);
-	//const { own, available } = await db.list(userId);
 
 	let text = "<b>Ваши ящики:</b>\n";
 	if (own.length === 0) text += "—\n";
-	// else for (const m of own) text += `• <code>${m.email}</code>\n`;
 	else
 		for (const m of own) {
 			text +=
 				`• <b><code>${m.email}</code></b>\n` +
-				`  до ${m.expiresAtFormatted}\n` + // ← ГОТОВАЯ СТРОКА!
-				//`  до ${m.expires_at}\n` +
-				//`  до ${new Date(m.expires_at).toLocaleString()}\n` +
+				`  до ${m.expiresAtFormatted}\n` +
 				`  /delete ${m.email}\n`;
 		}
-
-	// text += "\n<b>Доступные для аренды:</b>\n";
-	// if (available.length === 0) text += "—\n";
-	// else for (const m of available) text += `• /select ${m.email}\n`;
-
 	await sendMessage(text, env, chatId);
 }
 

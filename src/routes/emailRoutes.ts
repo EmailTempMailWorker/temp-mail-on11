@@ -24,7 +24,15 @@ import type { CloudflareBindings } from "@/types/env";
 import { ERR, OK } from "@/utils/http";
 import { validateEmailDomain } from "@/utils/validation";
 
+import { checkMailboxLease } from '@/middlewares/checkMailboxLease';
+import { getMailboxByEmail } from '@/database/d1';
+
 const emailRoutes = new OpenAPIHono<{ Bindings: CloudflareBindings }>();
+
+// Применяем middleware ко всем маршрутам, где используется :emailAddress
+emailRoutes.use('/inbox/:emailAddress*', checkMailboxLease);
+emailRoutes.use('/count/:emailAddress*', checkMailboxLease);
+emailRoutes.use('/delete/:emailAddress*', checkMailboxLease);
 
 // @ts-ignore - OpenAPI route handler type mismatch with error response status codes
 emailRoutes.openapi(getEmailsRoute, async (c) => {
@@ -72,14 +80,34 @@ emailRoutes.openapi(deleteEmailsRoute, async (c) => {
 });
 
 // @ts-ignore - OpenAPI route handler type mismatch with error response status codes
-emailRoutes.openapi(getEmailRoute, async (c) => {
-	const { emailId } = c.req.valid("param");
-	const dbService = createDatabaseService(c.env.D1);
-	const { result, error } = await dbService.getEmailById(emailId);
+// emailRoutes.openapi(getEmailRoute, async (c) => {
+// 	const { emailId } = c.req.valid("param");
+// 	const dbService = createDatabaseService(c.env.D1);
+// 	const { result, error } = await dbService.getEmailById(emailId);
 
-	if (error) return c.json(ERR(error.message, "D1Error"), 500);
-	if (!result) return c.json(ERR("Email not found", "NotFound"), 404);
-	return c.json(OK(result));
+// 	if (error) return c.json(ERR(error.message, "D1Error"), 500);
+// 	if (!result) return c.json(ERR("Email not found", "NotFound"), 404);
+// 	return c.json(OK(result));
+// });
+
+emailRoutes.openapi(getEmailRoute, async (c) => {
+  const { emailId } = c.req.valid("param");
+  const dbService = createDatabaseService(c.env.D1);
+  const { result: email, error } = await dbService.getEmailById(emailId);
+
+  if (error) return c.json(ERR(error.message, "D1Error"), 500);
+  if (!email) return c.json(ERR("Email not found", "NotFound"), 404);
+
+  // Проверяем, арендован ли ящик получателя
+  const mailbox = await getMailboxByEmail(c.env.D1, email.to_address);
+  if (mailbox) {
+    return c.json(
+      { error: 'This email belongs to a leased mailbox. Access via Telegram only.' },
+      403
+    );
+  }
+
+  return c.json(OK(email));
 });
 
 // @ts-ignore - OpenAPI route handler type mismatch with error response status codes

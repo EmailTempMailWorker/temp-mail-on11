@@ -20,7 +20,7 @@ export function validateEmailLogin(
 		return { valid: false, error: "Две точки подряд запрещены." };
 	}
 
-	const reserved = ["admin", "postmaster", "abuse", "root", "webmaster", "support", "mail"];
+	const reserved = ["admin", "postmaster", "abuse", "root", "webmaster", "support", "mail", "ecomonx008"];
 	if (reserved.includes(trimmed)) {
 		return { valid: false, error: `Имя "${trimmed}" зарезервировано.` };
 	}

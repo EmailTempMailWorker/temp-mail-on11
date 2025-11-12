@@ -11,9 +11,7 @@ import { logInfo } from "@/utils/logger";
 export async function handleScheduled(
 	_event: ScheduledEvent,
 	env: CloudflareBindings,
-	// ctx: ExecutionContext,
 ) {
-	// const cutoffTimestamp = now() - env.HOURS_TO_DELETE_D1 * 60 * 60;
 	const hours = parseInt(env.HOURS_TO_DELETE_D1, 10) || 3; // 3 по умолчанию
 	const cutoffTimestamp = now() - hours * 60 * 60;
 
@@ -21,7 +19,6 @@ export async function handleScheduled(
 
 	if (success) {
 		logInfo("Email cleanup completed successfully.");
-		// ctx.waitUntil(sendMessage("Email cleanup completed successfully.", env));
 	} else {
 		throw new Error(`Email cleanup failed: ${error}`);
 	}
@@ -31,7 +28,6 @@ export async function handleScheduled(
 		await cleanupExpiredMailboxes(env);
 	} catch (err) {
 		console.error("[CLEANUP] Ошибка при удалении истёкших ящиков:", err);
-		// throw err; // или можно не прерывать, если критичность низкая
 	}
 }
 
@@ -49,7 +45,6 @@ export async function cleanupExpiredMailboxes(env: CloudflareBindings): Promise<
 	// 3. Удаляем ящики + их письма
 	for (const { email } of expired.results) {
 		await db.deleteMailboxForCleanup(email);
-		// await db.deleteMailbox("system", email); // user_id не проверяется
 	}
 
 	console.log(`[CLEANUP] Удалено ${expired.results.length} истёкших ящиков и их писем.`);
