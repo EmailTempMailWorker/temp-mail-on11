@@ -29,9 +29,9 @@ import { validateEmailDomain } from "@/utils/validation";
 const emailRoutes = new OpenAPIHono<{ Bindings: CloudflareBindings }>();
 
 // Применяем middleware ко всем маршрутам, где используется :emailAddress
-emailRoutes.use("/inbox/:emailAddress*", checkMailboxLease);
-emailRoutes.use("/count/:emailAddress*", checkMailboxLease);
-emailRoutes.use("/delete/:emailAddress*", checkMailboxLease);
+emailRoutes.use("/emails/:emailAddress*", checkMailboxLease);
+emailRoutes.use("/emails/count/:emailAddress*", checkMailboxLease);
+emailRoutes.use("/emails/delete/:emailAddress*", checkMailboxLease);
 
 // @ts-ignore - OpenAPI route handler type mismatch with error response status codes
 emailRoutes.openapi(getEmailsRoute, async (c) => {
