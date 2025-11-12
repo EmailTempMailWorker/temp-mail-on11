@@ -41,9 +41,9 @@ async function handleAutoCreate(
 	await sendMessage(
 		`<b>Автоматически создан ящик:</b>\n` +
 			`Email: <code>${email}</code>\n` +
-			`Истекает: ${expiresAtFormatted}` +
-			`Истекает: ${new Date(expiresAtFormatted).toLocaleString()}`,//\n\n` +
-			//`Письма: /emails ${email}`,
+			`Истекает: ${expiresAtFormatted}`, // +
+			//`Истекает: ${new Date(expiresAtFormatted).toLocaleString()}`, //\n\n` +
+		//`Письма: /emails ${email}`,
 		env,
 		chatId,
 	);
@@ -79,8 +79,8 @@ async function handleCustomCreate(
 	await sendMessage(
 		`<b>Ящик создан!</b>\n` +
 			`Email: <code>${email}</code>\n` +
-			`Истекает: ${expiresAtFormatted}` +
-			`Истекает: ${new Date(expiresAtFormatted).toLocaleString()}`, //\n\n` +
+			`Истекает: ${expiresAtFormatted}`, // +
+			// `Истекает: ${new Date(expiresAtFormatted).toLocaleString()}`, //\n\n` +
 		//`Письма: /emails ${email}`,
 		env,
 		chatId,
@@ -103,9 +103,9 @@ async function handleList(
 		for (const m of own) {
 			text +=
 				`• <b><code>${m.email}</code></b>\n` +
-				`  до ${m.expiresAtFormatted}\n` +  // ← ГОТОВАЯ СТРОКА!
-				`  до ${m.expires_at}\n` +
-				`  до ${new Date(m.expires_at).toLocaleString()}\n` +
+				`  до ${m.expiresAtFormatted}\n` + // ← ГОТОВАЯ СТРОКА!
+				//`  до ${m.expires_at}\n` +
+				//`  до ${new Date(m.expires_at).toLocaleString()}\n` +
 				`  /delete ${m.email}\n`;
 		}
 

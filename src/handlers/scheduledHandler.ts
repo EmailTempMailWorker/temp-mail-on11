@@ -27,12 +27,12 @@ export async function handleScheduled(
 	}
 
 	// 2. Удаляем истёкшие ящики
-    try {
-        await cleanupExpiredMailboxes(env);
-    } catch (err) {
-        console.error("[CLEANUP] Ошибка при удалении истёкших ящиков:", err);
-        // throw err; // или можно не прерывать, если критичность низкая
-    }
+	try {
+		await cleanupExpiredMailboxes(env);
+	} catch (err) {
+		console.error("[CLEANUP] Ошибка при удалении истёкших ящиков:", err);
+		// throw err; // или можно не прерывать, если критичность низкая
+	}
 }
 
 export async function cleanupExpiredMailboxes(env: CloudflareBindings): Promise<void> {
@@ -48,7 +48,8 @@ export async function cleanupExpiredMailboxes(env: CloudflareBindings): Promise<
 
 	// 3. Удаляем ящики + их письма
 	for (const { email } of expired.results) {
-		await db.deleteMailbox("system", email); // user_id не проверяется
+		await db.deleteMailboxForCleanup(email);
+		// await db.deleteMailbox("system", email); // user_id не проверяется
 	}
 
 	console.log(`[CLEANUP] Удалено ${expired.results.length} истёкших ящиков и их писем.`);
