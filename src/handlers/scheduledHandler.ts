@@ -25,6 +25,14 @@ export async function handleScheduled(
 	} else {
 		throw new Error(`Email cleanup failed: ${error}`);
 	}
+
+	// 2. Удаляем истёкшие ящики
+    try {
+        await cleanupExpiredMailboxes(env);
+    } catch (err) {
+        console.error("[CLEANUP] Ошибка при удалении истёкших ящиков:", err);
+        // throw err; // или можно не прерывать, если критичность низкая
+    }
 }
 
 export async function cleanupExpiredMailboxes(env: CloudflareBindings): Promise<void> {
