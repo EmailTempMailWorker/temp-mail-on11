@@ -242,6 +242,48 @@ ${bodyText}
 
 	ctx.waitUntil(sendMessage(text, env, chatId));
 
+	// === Отправка HTML-версии письма как файла ===
+	if (parsedEmail.html) {
+		ctx.waitUntil(sendEmailAsHtmlFile(chatId, subject, from, date, parsedEmail.html, env, ctx));
+	}
+	// 	if (parsedEmail.html) {
+	// 		const fullHtml = `<!DOCTYPE html>
+	// <html>
+	// <head>
+	//     <meta charset="utf-8">
+	//     <title>${subject}</title>
+	//     <style>
+	//         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f9f9f9; }
+	//         pre { background: #fff; padding: 15px; border-radius: 8px; }
+	//     </style>
+	// </head>
+	// <body>
+	//     ${parsedEmail.html}
+	//     <hr>
+	//     <small>
+	//         От: ${from}<br>
+	//         Тема: ${subject}<br>
+	//         Получено: ${date}
+	//     </small>
+	// </body>
+	// </html>`;
+
+	// 		const blob = new Blob([fullHtml], { type: "text/html" });
+
+	// 		const formHtml = new FormData();
+	// 		formHtml.append("chat_id", chatId);
+	// 		formHtml.append("document", blob, `${subject.slice(0, 50).trim() || "email"}.html`);
+	// 		formHtml.append("parse_mode", "HTML");
+	// 		formHtml.append("caption", `Письмо как HTML\nОт: ${from}\nТема: ${subject}`);
+
+	// 		ctx.waitUntil(
+	// 			fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendDocument`, {
+	// 				method: "POST",
+	// 				body: formHtml,
+	// 			}).catch((err) => console.error("Telegram send HTML failed:", err)),
+	// 		);
+	// 	}
+
 	// === Отправка вложений ===
 	for (const att of validAttachments) {
 		if (!att.filename || !att.content) continue;
@@ -277,6 +319,55 @@ ${bodyText}
 			}).catch((err) => console.error("Telegram sendDocument failed:", err)),
 		);
 	}
+}
+
+// === Отправка письма как HTML-файла в Telegram ===
+async function sendEmailAsHtmlFile(
+	chatId: string,
+	subject: string,
+	from: string,
+	date: string,
+	html: string,
+	env: CloudflareBindings,
+	ctx: ExecutionContext,
+) {
+	if (!env.TELEGRAM_BOT_TOKEN) return;
+
+	const safeSubject = (subject || "email").slice(0, 60).trim();
+	const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${safeSubject}</title>
+    <style>
+        body { font-family: system-ui, sans-serif; line-height: 1.5; padding: 20px; background: #fafafa; }
+        a { color: #0066cc; }
+    </style>
+</head>
+<body>
+    ${html}
+    <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+    <small>
+        От: ${from}<br>
+        Тема: ${safeSubject}<br>
+        Получено: ${date}
+    </small>
+</body>
+</html>`;
+
+	const blob = new Blob([fullHtml], { type: "text/html" });
+
+	const form = new FormData();
+	form.append("chat_id", chatId);
+	form.append("document", blob, `${safeSubject}.html`);
+	form.append("caption", `Письмо как HTML\nОт: ${from}\nТема: ${safeSubject}`);
+
+	ctx.waitUntil(
+		fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendDocument`, {
+			method: "POST",
+			body: form,
+		}).catch((err) => console.error("Failed to send HTML email:", err)),
+	);
 }
 
 export async function getMessages(
