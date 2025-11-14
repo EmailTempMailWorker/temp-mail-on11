@@ -3,7 +3,7 @@ import PostalMime, { type Email as PostalMimeEmail } from "postal-mime";
 import { ATTACHMENT_LIMITS } from "@/config/constants";
 import * as db from "@/database/d1";
 import { getMailboxByEmail } from "@/database/d1";
-import * as r2 from "@/database/r2";
+// import * as r2 from "@/database/r2";
 import { emailSchema } from "@/schemas/emails";
 import type { Email } from "@/types/email";
 import type { CloudflareBindings } from "@/types/env";
@@ -155,48 +155,48 @@ export async function handleEmail(
 	}
 }
 
-// === Обработка одного вложения ===
-async function _processSingleAttachment(
-	env: CloudflareBindings,
-	emailId: string,
-	attachment: EmailAttachment,
-): Promise<void> {
-	if (!attachment.filename) {
-		console.warn(`Skipping attachment without filename in email ${emailId}`);
-		return;
-	}
+// // === Обработка одного вложения ===
+// async function _processSingleAttachment(
+// 	env: CloudflareBindings,
+// 	emailId: string,
+// 	attachment: EmailAttachment,
+// ): Promise<void> {
+// 	if (!attachment.filename) {
+// 		console.warn(`Skipping attachment without filename in email ${emailId}`);
+// 		return;
+// 	}
 
-	const attachmentId = createId();
+// 	const attachmentId = createId();
 
-	let content: ArrayBuffer;
-	let attachmentSize: number;
+// 	let content: ArrayBuffer;
+// 	let attachmentSize: number;
 
-	if (attachment.content instanceof ArrayBuffer) {
-		content = attachment.content;
-		attachmentSize = content.byteLength;
-	} else {
-		const encodedContent = new TextEncoder().encode(attachment.content || "");
-		content = encodedContent.buffer as ArrayBuffer;
-		attachmentSize = encodedContent.byteLength;
-	}
+// 	if (attachment.content instanceof ArrayBuffer) {
+// 		content = attachment.content;
+// 		attachmentSize = content.byteLength;
+// 	} else {
+// 		const encodedContent = new TextEncoder().encode(attachment.content || "");
+// 		content = encodedContent.buffer as ArrayBuffer;
+// 		attachmentSize = encodedContent.byteLength;
+// 	}
 
-	const r2Key = r2.generateR2Key(emailId, attachmentId, attachment.filename);
+// 	const r2Key = r2.generateR2Key(emailId, attachmentId, attachment.filename);
 
-	const attachmentData = {
-		id: attachmentId,
-		email_id: emailId,
-		filename: attachment.filename,
-		content_type: attachment.mimeType || "application/octet-stream",
-		size: attachmentSize,
-		r2_key: r2Key,
-		created_at: now(),
-	};
+// 	const attachmentData = {
+// 		id: attachmentId,
+// 		email_id: emailId,
+// 		filename: attachment.filename,
+// 		content_type: attachment.mimeType || "application/octet-stream",
+// 		size: attachmentSize,
+// 		r2_key: r2Key,
+// 		created_at: now(),
+// 	};
 
-	const { success: dbSuccess, error: dbError } = await db.insertAttachment(env.D1, attachmentData);
-	if (!dbSuccess) {
-		console.error(`Failed to store attachment metadata for ${attachment.filename}:`, dbError);
-	}
-}
+// 	const { success: dbSuccess, error: dbError } = await db.insertAttachment(env.D1, attachmentData);
+// 	if (!dbSuccess) {
+// 		console.error(`Failed to store attachment metadata for ${attachment.filename}:`, dbError);
+// 	}
+// }
 
 // === Форматирование размера ===
 function formatBytes(bytes: number): string {
@@ -245,44 +245,10 @@ ${bodyText}
 	// === Отправка HTML-версии письма как файла ===
 	if (parsedEmail.html) {
 		ctx.waitUntil(sendEmailAsHtmlFile(chatId, subject, from, date, parsedEmail.html, env, ctx));
+
+		const htmlTest = `<pre style=\"font-family: sans-serif; white-space: pre-wrap;\">\n---\nДанное письмо было сформировано автоматически службой уведомлений электронного документооборота. Пожалуйста, не отвечайте на него. Электронный адрес msed@mosreg.ru не является адресом для переписки\n\nПроверить электронную подпись документа вы можете на портале Госуслуг https://www.gosuslugi.ru/pgu/eds в разделе \"ЭП-отсоединенная, в формате PKCS#7\"</pre>`;
+		ctx.waitUntil(sendEmailAsHtmlFile(chatId, subject, from, date, htmlTest, env, ctx));
 	}
-	// 	if (parsedEmail.html) {
-	// 		const fullHtml = `<!DOCTYPE html>
-	// <html>
-	// <head>
-	//     <meta charset="utf-8">
-	//     <title>${subject}</title>
-	//     <style>
-	//         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f9f9f9; }
-	//         pre { background: #fff; padding: 15px; border-radius: 8px; }
-	//     </style>
-	// </head>
-	// <body>
-	//     ${parsedEmail.html}
-	//     <hr>
-	//     <small>
-	//         От: ${from}<br>
-	//         Тема: ${subject}<br>
-	//         Получено: ${date}
-	//     </small>
-	// </body>
-	// </html>`;
-
-	// 		const blob = new Blob([fullHtml], { type: "text/html" });
-
-	// 		const formHtml = new FormData();
-	// 		formHtml.append("chat_id", chatId);
-	// 		formHtml.append("document", blob, `${subject.slice(0, 50).trim() || "email"}.html`);
-	// 		formHtml.append("parse_mode", "HTML");
-	// 		formHtml.append("caption", `Письмо как HTML\nОт: ${from}\nТема: ${subject}`);
-
-	// 		ctx.waitUntil(
-	// 			fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendDocument`, {
-	// 				method: "POST",
-	// 				body: formHtml,
-	// 			}).catch((err) => console.error("Telegram send HTML failed:", err)),
-	// 		);
-	// 	}
 
 	// === Отправка вложений ===
 	for (const att of validAttachments) {
@@ -360,7 +326,7 @@ async function sendEmailAsHtmlFile(
 	const form = new FormData();
 	form.append("chat_id", chatId);
 	form.append("document", blob, `${safeSubject}.html`);
-	form.append("caption", `Письмо как HTML\nОт: ${from}\nТема: ${safeSubject}`);
+	form.append("caption", `<b>Письмо как HTML</b>\nОт: ${from}\nТема: ${safeSubject}`);
 
 	ctx.waitUntil(
 		fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendDocument`, {

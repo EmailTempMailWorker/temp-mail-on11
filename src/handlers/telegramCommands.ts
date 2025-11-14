@@ -1,6 +1,6 @@
 import { MailboxDB } from "@/database/mailbox";
-import { getMessages } from "@/handlers/emailHandler";
-import type { Email } from "@/types/email";
+// import { getMessages } from "@/handlers/emailHandler";
+// import type { Email } from "@/types/email";
 import type { CloudflareBindings } from "@/types/env";
 import { sendMessage } from "@/utils/telegram";
 import { validateEmailLogin } from "@/utils/validateEmailLogin";
@@ -100,45 +100,45 @@ async function handleList(
 	await sendMessage(text, env, chatId);
 }
 
-async function handleSelect(
-	db: MailboxDB,
-	userId: string,
-	email: string,
-	env: CloudflareBindings,
-	chatId: string,
-): Promise<void> {
-	if (!email.includes("@")) {
-		await sendMessage("Использование: /select email@temp-mail.on11", env, chatId);
-		return;
-	}
-	await db.select(userId, email);
-	await sendMessage(`Ящик <code>${email}</code> теперь ваш!`, env, chatId);
-}
+// async function handleSelect(
+// 	db: MailboxDB,
+// 	userId: string,
+// 	email: string,
+// 	env: CloudflareBindings,
+// 	chatId: string,
+// ): Promise<void> {
+// 	if (!email.includes("@")) {
+// 		await sendMessage("Использование: /select email@temp-mail.on11", env, chatId);
+// 		return;
+// 	}
+// 	await db.select(userId, email);
+// 	await sendMessage(`Ящик <code>${email}</code> теперь ваш!`, env, chatId);
+// }
 
-async function handleEmails(env: CloudflareBindings, args: string, chatId: string): Promise<void> {
-	if (!args.includes("@")) {
-		await sendMessage("Использование: /emails email@temp-mail.on11", env, chatId);
-		return;
-	}
+// async function handleEmails(env: CloudflareBindings, args: string, chatId: string): Promise<void> {
+// 	if (!args.includes("@")) {
+// 		await sendMessage("Использование: /emails email@temp-mail.on11", env, chatId);
+// 		return;
+// 	}
 
-	const [login, domain] = args.split("@");
-	const messages: Email[] = await getMessages(env, domain, login);
+// 	const [login, domain] = args.split("@");
+// 	const messages: Email[] = await getMessages(env, domain, login);
 
-	if (messages.length === 0) {
-		await sendMessage(`Писем в <code>${args}</code> нет.`, env, chatId);
-		return;
-	}
+// 	if (messages.length === 0) {
+// 		await sendMessage(`Писем в <code>${args}</code> нет.`, env, chatId);
+// 		return;
+// 	}
 
-	const msg = messages[0];
-	await sendMessage(
-		`<b>Последнее письмо:</b>\n\n` +
-			`От: ${msg.from_address}\n` +
-			`Тема: ${msg.subject ?? "_без темы_"}\n` +
-			`Дата: ${new Date(msg.received_at * 1000).toLocaleString()}`,
-		env,
-		chatId,
-	);
-}
+// 	const msg = messages[0];
+// 	await sendMessage(
+// 		`<b>Последнее письмо:</b>\n\n` +
+// 			`От: ${msg.from_address}\n` +
+// 			`Тема: ${msg.subject ?? "_без темы_"}\n` +
+// 			`Дата: ${new Date(msg.received_at * 1000).toLocaleString()}`,
+// 		env,
+// 		chatId,
+// 	);
+// }
 
 async function handleDelete(
 	db: MailboxDB,
@@ -190,13 +190,13 @@ export async function handleUserCommand(
 				await handleList(db, userId, env, chatId);
 				break;
 
-			case "/select":
-				await handleSelect(db, userId, args, env, chatId);
-				break;
+			// case "/select":
+			// 	await handleSelect(db, userId, args, env, chatId);
+			// 	break;
 
-			case "/emails":
-				await handleEmails(env, args, chatId);
-				break;
+			// case "/emails":
+			// 	await handleEmails(env, args, chatId);
+			// 	break;
 
 			case "/auto":
 				await handleAutoCreate(db, userId, env, chatId);

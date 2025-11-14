@@ -21,17 +21,6 @@ export async function handleTelegramBotUpdate(
 		return new Response("OK", { status: 200 });
 	}
 
-	// // === Админ ===
-	// if (text === "/start") {
-	// 	await sendMessage(
-	// 		`<b>Админ-панель</b>\n\n` + `Все письма приходят сюда.\n` + `<i>Скоро: /refresh, /stats</i>`,
-	// 		env,
-	// 		chatId,
-	// 	);
-	// }
-
-	// return new Response("OK", { status: 200 });
-
 	// === Админ ===
 	if (text === "/start") {
 		await sendMessage(
@@ -39,8 +28,7 @@ export async function handleTelegramBotUpdate(
 				`Все письма приходят сюда.\n\n` +
 				`<b>Управление ролями:</b>\n` +
 				`/setrole &lt;userId&gt; &lt;regular|vip|admin&gt;\n` +
-				`/getrole &lt;userId&gt;\n\n` +
-				`<i>Скоро: /refresh, /stats</i>`,
+				`/getrole &lt;userId&gt;\n\n`,
 			env,
 			chatId,
 		);
