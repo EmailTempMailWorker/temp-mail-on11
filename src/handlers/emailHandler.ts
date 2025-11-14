@@ -332,7 +332,8 @@ async function sendEmailAsHtmlFile(
 	const form = new FormData();
 	form.append("chat_id", chatId);
 	form.append("document", blob, `${safeSubject}.html`);
-	form.append("caption", `**Письмо как HTML**\nОт: ${from}\nТема: ${safeSubject}`);
+	form.append("parse_mode", "HTML");
+	form.append("caption", `<b>Письмо как HTML</b>\nОт: ${from}\nТема: ${safeSubject}`);
 
 	ctx.waitUntil(
 		fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendDocument`, {

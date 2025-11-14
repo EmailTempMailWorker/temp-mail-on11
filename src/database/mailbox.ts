@@ -86,7 +86,7 @@ export class MailboxDB {
 
 	// Форматирование даты в МСК, 24-часовой формат
 	private formatMoscowTime(date: Date): string {
-		return date.toLocaleString("ru-RU", {
+		const formatted = date.toLocaleString("ru-RU", {
 			timeZone: "Europe/Moscow",
 			hour12: false,
 			year: "numeric",
@@ -96,6 +96,7 @@ export class MailboxDB {
 			minute: "2-digit",
 			second: "2-digit",
 		});
+		return `${formatted} MSK (UTC+3)`;
 	}
 
 	async create(
