@@ -22,5 +22,14 @@ export async function sendMessage(
 			text,
 			parse_mode: "HTML",
 		}),
-	}).catch((err) => console.error("Telegram send error:", err));
+	})
+		.then(async (res) => {
+			if (!res.ok) {
+				const text = await res.text();
+				console.error("Telegram sendMessage error:", res.status, text);
+			}
+			// Просто читаем, чтобы освободить соединение
+			await res.text();
+		})
+		.catch((err) => console.error("Telegram send error:", err));
 }

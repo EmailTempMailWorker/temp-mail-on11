@@ -245,9 +245,6 @@ ${bodyText}
 	// === Отправка HTML-версии письма как файла ===
 	if (parsedEmail.html) {
 		ctx.waitUntil(sendEmailAsHtmlFile(chatId, subject, from, date, parsedEmail.html, env, ctx));
-
-		const htmlTest = `<pre style=\"font-family: sans-serif; white-space: pre-wrap;\">\n---\nДанное письмо было сформировано автоматически службой уведомлений электронного документооборота. Пожалуйста, не отвечайте на него. Электронный адрес msed@mosreg.ru не является адресом для переписки\n\nПроверить электронную подпись документа вы можете на портале Госуслуг https://www.gosuslugi.ru/pgu/eds в разделе \"ЭП-отсоединенная, в формате PKCS#7\"</pre>`;
-		ctx.waitUntil(sendEmailAsHtmlFile(chatId, subject, from, date, htmlTest, env, ctx));
 	}
 
 	// === Отправка вложений ===
@@ -282,7 +279,16 @@ ${bodyText}
 			fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendDocument`, {
 				method: "POST",
 				body: form,
-			}).catch((err) => console.error("Telegram sendDocument failed:", err)),
+			})
+				.then(async (res) => {
+					if (!res.ok) {
+						const text = await res.text();
+						console.error("Telegram sendDocumentEmailAttachment error:", res.status, text);
+					}
+					// Просто читаем, чтобы освободить соединение
+					await res.text();
+				})
+				.catch((err) => console.error("Telegram sendDocument failed:", err)),
 		);
 	}
 }
@@ -326,13 +332,22 @@ async function sendEmailAsHtmlFile(
 	const form = new FormData();
 	form.append("chat_id", chatId);
 	form.append("document", blob, `${safeSubject}.html`);
-	form.append("caption", `<b>Письмо как HTML</b>\nОт: ${from}\nТема: ${safeSubject}`);
+	form.append("caption", `**Письмо как HTML**\nОт: ${from}\nТема: ${safeSubject}`);
 
 	ctx.waitUntil(
 		fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendDocument`, {
 			method: "POST",
 			body: form,
-		}).catch((err) => console.error("Failed to send HTML email:", err)),
+		})
+			.then(async (res) => {
+				if (!res.ok) {
+					const text = await res.text();
+					console.error("Telegram sendDocumentHTML error:", res.status, text);
+				}
+				// Просто читаем, чтобы освободить соединение
+				await res.text();
+			})
+			.catch((err) => console.error("Failed to send HTML email:", err)),
 	);
 }
 
